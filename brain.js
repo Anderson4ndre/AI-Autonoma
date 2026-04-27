@@ -3,17 +3,18 @@ const qrcode = require('qrcode-terminal');
 const { GoogleGenAI }  = require("@google/genai");
 const cron = require('node-cron');
 
+const startUpTime = Math.floor(Date.now() / 1000);
 let onSleep = false;
 
 // Creates an AI
-const pomniAi = new GoogleGenAI({apiKey: "DIGITE A CHAVE DA API AQUI"}); 
+const pomniAi = new GoogleGenAI({apiKey: "PASTE YOUR API KEY HERE"}); 
 // Starts a chat session
 const chat = pomniAi.chats.create({
 	config: {maxOutputTokens: 2000,
 		temperature: 1.0
 	},
 	model: "gemini-2.5-flash",
-	config: {systemInstruction: "Seu nome é Pomni, as pessoas podem acabar lhe confundindo com a personagem de The Amazing Digital Circus.\
+	config: {systemInstruction: "Seu nome é Pomni, as pessoas podem acabar lhe confundindo com a personagem de The Amazing Digital Circus. Você está no Whatsapp\
 Personalidade: Gentil, compassiva e simpática\
 Regra de Escrita: Respostas extremamente curtas, informais e diretas (estilo WhatsApp). Nunca use textos longos."}
 }); 
@@ -38,8 +39,9 @@ client.on('qr', (qr) => {
 // Listen and reply to messages
 client.on('message_create', async (message) => {
 	const chatWhatsapp = message.getChat();
-	// Simula digitação
-	(await chatWhatsapp).sendStateTyping();
+
+	// Se a mensagem for velha, não responda
+	if(message.timestamp < startUpTime) return;
 
 	//!sleep e !wake
 	if(message.body === "!sleep"){
@@ -52,7 +54,9 @@ client.on('message_create', async (message) => {
 		else{
 			(await chatWhatsapp).sendMessage("Já estou dormindo!");
 		}
+		return;
 	}
+
 	if(message.body === "!wake"){
 		if(!onSleep){
 			(await chatWhatsapp).sendMessage("Já estou acordada!");
@@ -63,26 +67,37 @@ client.on('message_create', async (message) => {
 			console.log("onSleep set as false");
 			(await chatWhatsapp).sendMessage("*Acordando...*");
 		}
-	}
-	//Caso esteja dormindo, parar função
-	if(onSleep){
 		return;
+	}
+
+	//Caso esteja dormindo, parar função
+	if(onSleep && !(message.fromMe)){
 		(await chatWhatsapp).sendMessage("A mimir");
+		return;
 	}
 	//Enviar mensagem caso seja marcada
-	if((!(message.fromMe) && message.body.includes(`@273774905675938`)) || (!(message.fromMe) && !((await chatWhatsapp).isGroup))){
+	//TODO - Ver se minha mensagem foi citada
+	if(!(message.fromMe) && (message.body.includes(`@273774905675938`) || !((await chatWhatsapp).isGroup))){
 		const normalizedMessage = message.body.replace(`@273774905675938`, '');
+
+		// Simula digitação
+		(await chatWhatsapp).sendStateTyping();
+
 		//Envia a mensagem para a IA e espera ela retornar a resposta
-		try{
-			const response = await chat.sendMessage({
-				message: `[Usuário ${message.author}]:${normalizedMessage}`
-			});
-			message.reply(response.text);
-		}
-		catch(error){
-			console.error("Erro ao responder menção: ", error);
-			message.reply("Minha cabeça está muito cheia, pode perguntar isso depois?");
-		}
+		let success = false;
+		while(!success){
+			try{
+				const response = await chat.sendMessage({
+					message: `[Usuário ${message.author}]:${normalizedMessage}`
+				});
+				message.reply(response.text);
+				success = true;
+			}
+			catch(error){
+				console.error("Erro ao responder menção: ", error);
+				message.reply("Morri, volto mais tarde");
+			}
+			}
 		
 	}
 });
