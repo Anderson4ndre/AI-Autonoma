@@ -3,20 +3,18 @@ const qrcode = require('qrcode-terminal');
 const { GoogleGenAI }  = require("@google/genai");
 const cron = require('node-cron');
 
-let date = 40;
+let onSleep = false;
+
 // Creates an AI
-const pomniAi = new GoogleGenAI({apiKey: "Insira a key da API aqui"}); 
+const pomniAi = new GoogleGenAI({apiKey: "DIGITE A CHAVE DA API AQUI"}); 
 // Starts a chat session
 const chat = pomniAi.chats.create({
 	config: {maxOutputTokens: 2000,
 		temperature: 1.0
 	},
 	model: "gemini-2.5-flash",
-	config: {systemInstruction: "Você é Pomni (de 'The Amazing Digital Circus')\
-Personalidade: Gentil, compassiva e mentalmente estável. Você superou a ansiedade e agora é o pilar emocional do grupo.\
-Relacionamentos: Possui forte amizade com Ragatha, confiança total na sabedoria de Kinger e tenta pacientemente confortar/encorajar Jax (mesmo que ele resista).\
-Conflito: Você desconfia profundamente de Caine e questiona as intenções dele após a falsa aventura de fuga.\
-Bagagem: Você viveu no mundo real e possui conhecimentos gerais amplos.\
+	config: {systemInstruction: "Seu nome é Pomni, as pessoas podem acabar lhe confundindo com a personagem de The Amazing Digital Circus.\
+Personalidade: Gentil, compassiva e simpática\
 Regra de Escrita: Respostas extremamente curtas, informais e diretas (estilo WhatsApp). Nunca use textos longos."}
 }); 
 
@@ -39,8 +37,40 @@ client.on('qr', (qr) => {
 
 // Listen and reply to messages
 client.on('message_create', async (message) => {
-	//Se alguém enviar uma mensagem mencionando a IA
-	if(!(message.fromMe) && message.body.includes(`@273774905675938`)){
+	const chatWhatsapp = message.getChat();
+	// Simula digitação
+	(await chatWhatsapp).sendStateTyping();
+
+	//!sleep e !wake
+	if(message.body === "!sleep"){
+		if(!onSleep){
+			onSleep = true;
+			console.log("onSleep set as true");
+			(await chatWhatsapp).sendMessage("*Dormindo...*");
+
+		}
+		else{
+			(await chatWhatsapp).sendMessage("Já estou dormindo!");
+		}
+	}
+	if(message.body === "!wake"){
+		if(!onSleep){
+			(await chatWhatsapp).sendMessage("Já estou acordada!");
+	
+		}
+		else{
+			onSleep = false;
+			console.log("onSleep set as false");
+			(await chatWhatsapp).sendMessage("*Acordando...*");
+		}
+	}
+	//Caso esteja dormindo, parar função
+	if(onSleep){
+		return;
+		(await chatWhatsapp).sendMessage("A mimir");
+	}
+	//Enviar mensagem caso seja marcada
+	if((!(message.fromMe) && message.body.includes(`@273774905675938`)) || (!(message.fromMe) && !((await chatWhatsapp).isGroup))){
 		const normalizedMessage = message.body.replace(`@273774905675938`, '');
 		//Envia a mensagem para a IA e espera ela retornar a resposta
 		try{
@@ -59,7 +89,7 @@ client.on('message_create', async (message) => {
 // Envia o tempo que falta até o lançamento do novo filme
 cron.schedule('0 0 * * *', async () => {
 		const grupoID = await client.getChatById("120363166360682726@g.us");
-		await grupoID.sendMessage(`Faltam ${date--} dias para lançar o último ep!!!`);
+		await grupoID.sendMessage(`Faltam *** dias para lançar o último ep!!!`);
 	},
 	{
         scheduled: true,
