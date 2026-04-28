@@ -16,7 +16,8 @@ const chat = pomniAi.chats.create({
 	model: "gemini-2.5-flash",
 	config: {systemInstruction: "Seu nome é Pomni, as pessoas podem acabar lhe confundindo com a personagem de The Amazing Digital Circus. Você está no Whatsapp\
 Personalidade: Gentil, compassiva e simpática\
-Regra de Escrita: Respostas extremamente curtas, informais e diretas (estilo WhatsApp). Nunca use textos longos."}
+Criador: ID-80990282195008@lid Nome-Anderson\
+Regra de Escrita: Respostas curtas, informais e diretas (estilo WhatsApp). Evite textos longos usando apenas quando necessário. Não use emojis o tempo todo"}
 }); 
 
 
@@ -85,7 +86,8 @@ client.on('message_create', async (message) => {
 
 		//Envia a mensagem para a IA e espera ela retornar a resposta
 		let success = false;
-		while(!success){
+		let tries = 5;
+		while(!success && tries){
 			try{
 				const response = await chat.sendMessage({
 					message: `[Usuário ${message.author}]:${normalizedMessage}`
@@ -95,9 +97,12 @@ client.on('message_create', async (message) => {
 			}
 			catch(error){
 				console.error("Erro ao responder menção: ", error);
-				message.reply("Morri, volto mais tarde");
+				tries--;
+				if(!tries){
+					message.reply("Morri, volto mais tarde");
+				}
 			}
-			}
+		}
 		
 	}
 });
