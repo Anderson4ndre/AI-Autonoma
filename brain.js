@@ -39,7 +39,7 @@ client.on('qr', (qr) => {
 
 // Listen and reply to messages
 client.on('message_create', async (message) => {
-	const chatWhatsapp = message.getChat();
+	const chatWhatsapp = await message.getChat();
 
 	// Se a mensagem for velha, não responda
 	if(message.timestamp < startUpTime) return;
@@ -49,40 +49,39 @@ client.on('message_create', async (message) => {
 		if(!onSleep){
 			onSleep = true;
 			console.log("onSleep set as true");
-			(await chatWhatsapp).sendMessage("*Dormindo...*");
+			chatWhatsapp.sendMessage("*Dormindo...*");
 
 		}
 		else{
-			(await chatWhatsapp).sendMessage("Já estou dormindo!");
+			chatWhatsapp.sendMessage("Já estou dormindo!");
 		}
 		return;
 	}
 
 	if(message.body === "!wake"){
 		if(!onSleep){
-			(await chatWhatsapp).sendMessage("Já estou acordada!");
+			chatWhatsapp.sendMessage("Já estou acordada!");
 	
 		}
 		else{
 			onSleep = false;
 			console.log("onSleep set as false");
-			(await chatWhatsapp).sendMessage("*Acordando...*");
+			chatWhatsapp.sendMessage("*Acordando...*");
 		}
 		return;
 	}
 
 	//Caso esteja dormindo, parar função
 	if(onSleep && !(message.fromMe)){
-		(await chatWhatsapp).sendMessage("A mimir");
+		chatWhatsapp.sendMessage("A mimir");
 		return;
 	}
 	//Enviar mensagem caso seja marcada
 	//TODO - Ver se minha mensagem foi citada
-	if(!(message.fromMe) && (message.body.includes(`@273774905675938`) || !((await chatWhatsapp).isGroup))){
+	if(!(message.fromMe) && (message.body.includes(`@273774905675938`) || !(chatWhatsapp.isGroup) && !(message.fromMe))){
 		const normalizedMessage = message.body.replace(`@273774905675938`, '');
-
-		// Simula digitação
-		(await chatWhatsapp).sendStateTyping();
+	// Simula digitação
+		await chatWhatsapp.sendStateTyping();
 
 		//Envia a mensagem para a IA e espera ela retornar a resposta
 		let success = false;
@@ -90,16 +89,17 @@ client.on('message_create', async (message) => {
 		while(!success && tries){
 			try{
 				const response = await chat.sendMessage({
-					message: `[Usuário ${message.author}]:${normalizedMessage}`
+					message: `[Usuário ${message.author?message.author:message.from}]:${normalizedMessage}`
 				});
-				message.reply(response.text);
+				await message.reply(response.text);
 				success = true;
 			}
 			catch(error){
 				console.error("Erro ao responder menção: ", error);
 				tries--;
+				await new Promise(resolve => setTimeout(resolve, 2000));
 				if(!tries){
-					message.reply("Morri, volto mais tarde");
+					await message.reply("Morri, volto mais tarde"); //.catch(...)
 				}
 			}
 		}
