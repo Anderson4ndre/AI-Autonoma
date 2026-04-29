@@ -2,6 +2,7 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const { GoogleGenAI }  = require("@google/genai");
 const cron = require('node-cron');
+const { Temporal } = require('@js-temporal/polyfill');
 
 const startUpTime = Math.floor(Date.now() / 1000);
 let onSleep = false;
@@ -38,7 +39,7 @@ client.on('qr', (qr) => {
 });
 
 // Listen and reply to messages
-client.on('message_create', async (message) => {
+client.on('message', async (message) => {
 	const chatWhatsapp = await message.getChat();
 
 	// Se a mensagem for velha, não responda
@@ -71,17 +72,19 @@ client.on('message_create', async (message) => {
 		return;
 	}
 
-	//Caso esteja dormindo, parar função
-	if(onSleep && !(message.fromMe)){
-		chatWhatsapp.sendMessage("A mimir");
-		return;
-	}
+	
 	//Enviar mensagem caso seja marcada
 	//TODO - Ver se minha mensagem foi citada
-	if(!(message.fromMe) && (message.body.includes(`@273774905675938`) || !(chatWhatsapp.isGroup) && !(message.fromMe))){
+	if( message.body.includes(`@273774905675938`) || !(chatWhatsapp.isGroup)){
 		const normalizedMessage = message.body.replace(`@273774905675938`, '');
 	// Simula digitação
 		await chatWhatsapp.sendStateTyping();
+
+		//Caso esteja dormindo, parar função
+		if(onSleep){
+			chatWhatsapp.sendMessage("A mimir");
+			return;
+		}
 
 		//Envia a mensagem para a IA e espera ela retornar a resposta
 		let success = false;
@@ -107,9 +110,12 @@ client.on('message_create', async (message) => {
 	}
 });
 // Envia o tempo que falta até o lançamento do novo filme
-cron.schedule('0 0 * * *', async () => {
+cron.schedule('00 14 * * *', async () => {
+		const timeNow = Temporal.Now.plainDateISO();
+		const eventTime = new Temporal.PlainDate(2026, 6, 4);
+		const timeUntilEvent = timeNow.until(eventTime);
 		const grupoID = await client.getChatById("120363166360682726@g.us");
-		await grupoID.sendMessage(`Faltam *** dias para lançar o último ep!!!`);
+		await grupoID.sendMessage(`*Faltam ${timeUntilEvent.days} dias para lançar o último ep!!!*`);
 	},
 	{
         scheduled: true,
