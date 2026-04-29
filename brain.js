@@ -8,13 +8,14 @@ const startUpTime = Math.floor(Date.now() / 1000);
 let onSleep = false;
 
 // Creates an AI
-const pomniAi = new GoogleGenAI({apiKey: "PLACE YOUR API KEY HERE"}); 
+const pomniAi = new GoogleGenAI({apiKey: "PASTE YOUR API KEY HERE"}); 
 
 // Create a new client instance
 const client = new Client({
 	authStrategy: new LocalAuth({clientId: "PomniAccount"}),
 	puppeteer: { args: ['--no-sandbox'] }
 });
+
 
 // When the client is ready, run this code (only once)
 client.once('ready', () => {
@@ -26,6 +27,7 @@ client.on('qr', (qr) => {
     qrcode.generate(qr, {small: true});
 });
 
+
 // Listen and reply to messages
 client.on('message', async (message) => {
 	const chatWhatsapp = await message.getChat(); //trocar @2737... por wid
@@ -35,7 +37,6 @@ client.on('message', async (message) => {
 
 	//Debug
 	console.log(`${talkChance}% [Usuário ${message.author?message.author:message.from}]:${normalizedMessage}`);
-
 
 
 	//Caso alguém envie figurinha ou quando o WhatsApp envia vazio na primeira interação
@@ -83,22 +84,23 @@ client.on('message', async (message) => {
 		await chatWhatsapp.sendStateTyping();
 
 		//Caso esteja dormindo, parar função
-		if(onSleep && sentFilters){
-			chatWhatsapp.sendMessage("A mimir");
+		if(onSleep){
+			if(sentFilters){
+				chatWhatsapp.sendMessage("A mimir");
+			}
 			return;
 		}
 
 		//FETCH CHAT HISTORY
-		let success = false;
 		let tries = 3;
-		while(!success && tries){
+		while(tries){
 			try{
 				const historyPure = await chatWhatsapp.fetchMessages({limit: 15});
 				historyNormalized = historyPure.map(element => {
 					const author = element.author||element.from;
 					return `[${author}]: ${element.body}`
 				}).join('\n');
-				success = true;
+				tries = 0;
 			}
 			catch{
 				await new Promise(resolve => setTimeout(resolve, 2000));
@@ -112,16 +114,14 @@ client.on('message', async (message) => {
 		console.log(`Histórico: ${historyNormalized}`);//Debug
 
 		//Envia a mensagem para a IA e espera ela retornar a resposta
-		success = false;
 		tries = 5;
-		while(!success && tries){
+		while(tries){
 			try{
 				const resposta = await pomniAi.models.generateContent({
 					model: "gemini-2.5-flash",
 					config:{
-						maxOutputTokens: 2000,
 						temperature: 1.0,
-						systemInstruction:"Seu nome é Pomni, as pessoas podem acabar lhe confundindo com a personagem de The Amazing Digital Circus. Você está no Whatsapp\
+						systemInstruction:"Seu nome é Pomni, semelhante a personagem de The Amazing Digital Circus. Você está no Whatsapp\
 Personalidade: Gentil, compassiva e simpática\
 Criador: ID-80990282195008@lid Nome-Anderson\
 Regra de Escrita: Respostas curtas, informais e diretas (estilo WhatsApp). Evite textos longos usando apenas quando necessário. Não use emojis o tempo todo"
@@ -129,7 +129,7 @@ Regra de Escrita: Respostas curtas, informais e diretas (estilo WhatsApp). Evite
 					contents: `Aqui está o histórico recente do grupo:\n${historyNormalized}\n\nPomni, responda à última mensagem considerando esse contexto.`
 				});
 				await message.reply(resposta.text);
-				success = true;
+				tries = 0;
 			}
 			catch(error){
 				console.error(`Erro ao responder(${tries} tentativas restantes): `, error);
@@ -144,6 +144,98 @@ Regra de Escrita: Respostas curtas, informais e diretas (estilo WhatsApp). Evite
 		
 	}
 });
+
+//Chance de falar no grupo a cada minuto
+cron.schedule("* * * * *", async () => {
+	const talkChance = Math.floor(Math.random() * 100) + 1;
+	const instant = Temporal.Now.instant(); //Pega o tempo atual em forma de Temporal
+	let grupoID;
+	let tries = 3
+	while(tries){ //Tenta pegar o Chat pelo ID
+		try{
+			grupoID = await client.getChatById("120363166360682726@g.us")
+			tries = 0;
+		}
+		catch(error){
+			tries--;
+			console.error(`Erro(${tries}tentativas restantes)`,error);
+			await new Promise(resolve => setTimeout(resolve, 2000));
+			}
+		}
+	const lastMessage = grupoID.lastMessage;
+	const message = lastMessage;
+	const lastMessageTime = lastMessage.timestamp;
+	const lastMessageTimeTemporal = Temporal.Instant.fromEpochMilliseconds(lastMessageTime*1000);
+	const lastMessageNowDiffM = ((instant.epochMilliseconds) - lastMessageTimeTemporal.epochMilliseconds)/60000;
+	/* console.log(`Última mensagem: ${lastMessageTimeTemporal.epochMilliseconds}`);
+	console.log(`Agora: ${instant.epochMilliseconds}`);
+	console.log(lastMessageNowDiffM); */ //Debug code
+	console.log(`Chance de falar: ${talkChance}`);
+
+	if(onSleep){
+		return;
+	}
+
+	if(lastMessageNowDiffM > 30 && talkChance > 99){
+		let historyNormalized;
+	// Simula digitação
+		await grupoID.sendStateTyping();
+
+		//FETCH CHAT HISTORY
+		let tries = 3;
+		while(tries){
+			try{
+				const historyPure = await grupoID.fetchMessages({limit: 15});
+				historyNormalized = historyPure.map(element => {
+					const author = element.author||element.from;
+					return `[${author}]: ${element.body}`
+				}).join('\n');
+				tries = 0;
+			}
+			catch{
+				await new Promise(resolve => setTimeout(resolve, 2000));
+				if(!tries){
+					await message.reply("Morri, volto mais tarde"); //.catch(...)
+					return; 
+				}
+			}
+			
+		}
+		//console.log(`Histórico: ${historyNormalized}`);//Debug
+
+		//Envia a mensagem para a IA e espera ela retornar a resposta
+		tries = 5;
+		while(tries){
+			try{
+				const resposta = await pomniAi.models.generateContent({
+					model: "gemini-2.5-flash",
+					config:{
+						temperature: 1.0,
+						systemInstruction:"Seu nome é Pomni, semelhante a personagem de The Amazing Digital Circus. Você está no Whatsapp\
+Personalidade: Gentil, compassiva e simpática\
+Criador: ID-80990282195008@lid Nome-Anderson\
+Regra de Escrita: Respostas curtas, informais e diretas (estilo WhatsApp). Evite textos longos usando apenas quando necessário. Não use emojis o tempo todo"
+					},
+					contents: `Aqui está o histórico recente do grupo:\n${historyNormalized}\n\nPomni, responda à última mensagem considerando esse contexto.`
+				});
+				await message.reply(resposta.text);
+				tries = 0;
+			}
+			catch(error){
+				console.error(`Erro ao responder(${tries} tentativas restantes): `, error);
+				tries--;
+				await new Promise(resolve => setTimeout(resolve, 2000));
+				if(!tries){
+					await message.reply("Morri, volto mais tarde"); //.catch(...)
+					return; 
+				}
+			}
+
+		}
+	}
+})
+
+
 
 // Envia o tempo que falta até o lançamento do novo filme
 cron.schedule('00 14 * * *', async () => {
