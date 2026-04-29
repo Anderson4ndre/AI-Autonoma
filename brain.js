@@ -34,6 +34,7 @@ client.on('message', async (message) => {
 	const sentFilters = message.body.includes(`@273774905675938`) || !(chatWhatsapp.isGroup);
 	const talkChance = Math.floor(Math.random() * (100)) + 1;
 
+
 	//Caso alguém envie figurinha ou quando o WhatsApp envia vazio na primeira interação
 	if (!message.body || !(message.body.trim().length)) {
     return;
@@ -121,7 +122,7 @@ client.on('message', async (message) => {
 						temperature: 1.0,
 						systemInstruction:"Seu nome é Pomni, semelhante a personagem de The Amazing Digital Circus. Você está no Whatsapp\
 Personalidade: Gentil, compassiva e simpática\
-Criador: O nome do seu criador é Anderson e o ID dele na conversa é I80990282195008@lid\
+Criador: O nome do seu criador é Anderson e o ID dele na conversa é 80990282195008@lid\
 Regra de Escrita: Respostas curtas, informais e diretas (estilo WhatsApp). Evite textos longos usando apenas quando necessário. Não use emojis o tempo todo"
 					},
 					contents: `Aqui está o histórico recente do grupo:\n${historyNormalized}\n\nPomni, responda à última mensagem considerando esse contexto.`
@@ -145,21 +146,13 @@ Regra de Escrita: Respostas curtas, informais e diretas (estilo WhatsApp). Evite
 
 //Chance de falar no grupo a cada minuto
 cron.schedule("* * * * *", async () => {
+	if(!client.pupPage || onSleep) return;
+	const chatID = "120363166360682726@g.us";
 	const talkChance = Math.floor(Math.random() * 100) + 1;
 	const instant = Temporal.Now.instant(); //Pega o tempo atual em forma de Temporal
-	let grupoID;
-	let tries = 3
-	while(tries){ //Tenta pegar o Chat pelo ID
-		try{
-			grupoID = await client.getChatById("120363166360682726@g.us")
-			tries = 0;
-		}
-		catch(error){
-			tries--;
-			console.error(`Erro(${tries} tentativas restantes)`,error);
-			await new Promise(resolve => setTimeout(resolve, 3500));
-			}
-		}
+	const grupoID = await client.getChatById(chatID).catch(error => { 
+		console.error(`Erro(${tries} tentativas restantes)`, error);
+	})
 	const lastMessage = grupoID.lastMessage;
 	const message = lastMessage;
 	const lastMessageTime = lastMessage.timestamp;
@@ -170,19 +163,16 @@ cron.schedule("* * * * *", async () => {
 	console.log(lastMessageNowDiffM); */ //Debug code
 	console.log(`Chance de falar: ${talkChance}`);
 
-	if(onSleep){
-		return;
-	}
+	
 
-	if(lastMessageNowDiffM > 30 && talkChance > 99){
+	if(lastMessageNowDiffM > 10 && talkChance > 98){
 		let historyNormalized;
-	// Simula digitação
-		await grupoID.sendStateTyping();
-
 		//FETCH CHAT HISTORY
 		let tries = 3;
 		while(tries){
 			try{
+				// Simula digitação
+				await grupoID.sendStateTyping();
 				const historyPure = await grupoID.fetchMessages({limit: 15});
 				historyNormalized = historyPure.map(element => {
 					let author = element.author||element.from;
@@ -193,14 +183,11 @@ cron.schedule("* * * * *", async () => {
 				}).join('\n');
 				tries = 0;
 			}
-			catch{
-				await new Promise(resolve => setTimeout(resolve, 2000));
-				if(!tries){
-					await message.reply("Morri, volto mais tarde"); //.catch(...)
-					return; 
-				}
+			catch(error){
+				console.error("Erro no fetch messages: ", error);
+				await new Promise(resolve => setTimeout(resolve, 3500));
+				tries--;
 			}
-			
 		}
 		//console.log(`Histórico: ${historyNormalized}`);//Debug
 
@@ -214,7 +201,7 @@ cron.schedule("* * * * *", async () => {
 						temperature: 1.0,
 						systemInstruction:"Seu nome é Pomni, semelhante a personagem de The Amazing Digital Circus. Você está no Whatsapp\
 Personalidade: Gentil, compassiva e simpática\
-Criador: O nome do seu criador é Anderson e o ID dele na conversa é I80990282195008@lid\
+Criador: O nome do seu criador é Anderson e o ID dele na conversa é 80990282195008@lid\
 Regra de Escrita: Respostas curtas, informais e diretas (estilo WhatsApp). Evite textos longos usando apenas quando necessário. Não use emojis o tempo todo"
 					},
 					contents: `Aqui está o histórico recente do grupo:\n${historyNormalized}\n\nPomni, responda à última mensagem considerando esse contexto.`
