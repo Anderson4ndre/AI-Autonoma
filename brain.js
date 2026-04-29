@@ -8,7 +8,7 @@ const startUpTime = Math.floor(Date.now() / 1000);
 let onSleep = false;
 
 // Creates an AI
-const pomniAi = new GoogleGenAI({apiKey: "PASTE YOUR API KEY HERE"}); 
+const pomniAi = new GoogleGenAI({apiKey: "PLACE YOUR API KEY HERE"}); 
 
 // Create a new client instance
 const client = new Client({
@@ -32,12 +32,7 @@ client.on('qr', (qr) => {
 client.on('message', async (message) => {
 	const chatWhatsapp = await message.getChat(); //trocar @2737... por wid
 	const sentFilters = message.body.includes(`@273774905675938`) || !(chatWhatsapp.isGroup);
-	const normalizedMessage = message.body.replace(`@273774905675938`, '');
 	const talkChance = Math.floor(Math.random() * (100)) + 1;
-
-	//Debug
-	console.log(`${talkChance}% [Usuário ${message.author?message.author:message.from}]:${normalizedMessage}`);
-
 
 	//Caso alguém envie figurinha ou quando o WhatsApp envia vazio na primeira interação
 	if (!message.body || !(message.body.trim().length)) {
@@ -97,8 +92,11 @@ client.on('message', async (message) => {
 			try{
 				const historyPure = await chatWhatsapp.fetchMessages({limit: 15});
 				historyNormalized = historyPure.map(element => {
-					const author = element.author||element.from;
-					return `[${author}]: ${element.body}`
+					let author = element.author||element.from;
+					if(author == "273774905675938@lid"){
+						author = "Pomni(Você)"
+					}
+					return `[${author}]: ${element.body.replace(`@273774905675938`, '').trim()}`;
 				}).join('\n');
 				tries = 0;
 			}
@@ -123,7 +121,7 @@ client.on('message', async (message) => {
 						temperature: 1.0,
 						systemInstruction:"Seu nome é Pomni, semelhante a personagem de The Amazing Digital Circus. Você está no Whatsapp\
 Personalidade: Gentil, compassiva e simpática\
-Criador: ID-80990282195008@lid Nome-Anderson\
+Criador: O nome do seu criador é Anderson e o ID dele na conversa é I80990282195008@lid\
 Regra de Escrita: Respostas curtas, informais e diretas (estilo WhatsApp). Evite textos longos usando apenas quando necessário. Não use emojis o tempo todo"
 					},
 					contents: `Aqui está o histórico recente do grupo:\n${historyNormalized}\n\nPomni, responda à última mensagem considerando esse contexto.`
@@ -158,8 +156,8 @@ cron.schedule("* * * * *", async () => {
 		}
 		catch(error){
 			tries--;
-			console.error(`Erro(${tries}tentativas restantes)`,error);
-			await new Promise(resolve => setTimeout(resolve, 2000));
+			console.error(`Erro(${tries} tentativas restantes)`,error);
+			await new Promise(resolve => setTimeout(resolve, 3500));
 			}
 		}
 	const lastMessage = grupoID.lastMessage;
@@ -187,8 +185,11 @@ cron.schedule("* * * * *", async () => {
 			try{
 				const historyPure = await grupoID.fetchMessages({limit: 15});
 				historyNormalized = historyPure.map(element => {
-					const author = element.author||element.from;
-					return `[${author}]: ${element.body}`
+					let author = element.author||element.from;
+					if(author == "273774905675938@lid"){
+						author = "Pomni(Você)"
+					}
+					return `[${author}]: ${element.body.replace(`@273774905675938`, '').trim()}`
 				}).join('\n');
 				tries = 0;
 			}
@@ -213,7 +214,7 @@ cron.schedule("* * * * *", async () => {
 						temperature: 1.0,
 						systemInstruction:"Seu nome é Pomni, semelhante a personagem de The Amazing Digital Circus. Você está no Whatsapp\
 Personalidade: Gentil, compassiva e simpática\
-Criador: ID-80990282195008@lid Nome-Anderson\
+Criador: O nome do seu criador é Anderson e o ID dele na conversa é I80990282195008@lid\
 Regra de Escrita: Respostas curtas, informais e diretas (estilo WhatsApp). Evite textos longos usando apenas quando necessário. Não use emojis o tempo todo"
 					},
 					contents: `Aqui está o histórico recente do grupo:\n${historyNormalized}\n\nPomni, responda à última mensagem considerando esse contexto.`
