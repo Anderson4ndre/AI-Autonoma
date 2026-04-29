@@ -8,7 +8,7 @@ const startUpTime = Math.floor(Date.now() / 1000);
 let onSleep = false;
 
 // Creates an AI
-const pomniAi = new GoogleGenAI({apiKey: "PASTE YOUR API KEY HERE"}); 
+const pomniAi = new GoogleGenAI({apiKey: "AIzaSyDoz91BVIfc0B1e0W_jrXCc80Y8Y1_ocOQ"}); 
 // Starts a chat session
 const chat = pomniAi.chats.create({
 	config: {maxOutputTokens: 2000,
@@ -41,6 +41,14 @@ client.on('qr', (qr) => {
 // Listen and reply to messages
 client.on('message', async (message) => {
 	const chatWhatsapp = await message.getChat();
+	const normalizedMessage = message.body.replace(`@273774905675938`, '');
+	console.log(`[Usuário ${message.author?message.author:message.from}]:${normalizedMessage}`);
+	
+
+	//Caso alguém envie figurinha ou quando o WhatsApp envia vazio na primeira interação
+	if (!message.body || !(message.body.trim().length)) {
+    return;
+	}
 
 	// Se a mensagem for velha, não responda
 	if(message.timestamp < startUpTime) return;
@@ -75,8 +83,7 @@ client.on('message', async (message) => {
 	
 	//Enviar mensagem caso seja marcada
 	//TODO - Ver se minha mensagem foi citada
-	if( message.body.includes(`@273774905675938`) || !(chatWhatsapp.isGroup)){
-		const normalizedMessage = message.body.replace(`@273774905675938`, '');
+	if(message.body.includes(`@273774905675938`) || !(chatWhatsapp.isGroup)){
 	// Simula digitação
 		await chatWhatsapp.sendStateTyping();
 
