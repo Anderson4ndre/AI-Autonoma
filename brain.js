@@ -8,19 +8,7 @@ const startUpTime = Math.floor(Date.now() / 1000);
 let onSleep = false;
 
 // Creates an AI
-const pomniAi = new GoogleGenAI({apiKey: "PASTE YOUR API KEY HERE"}); 
-// Starts a chat session
-const chat = pomniAi.chats.create({
-	config: {maxOutputTokens: 2000,
-		temperature: 1.0
-	},
-	model: "gemini-2.5-flash",
-	config: {systemInstruction: "Seu nome é Pomni, as pessoas podem acabar lhe confundindo com a personagem de The Amazing Digital Circus. Você está no Whatsapp\
-Personalidade: Gentil, compassiva e simpática\
-Criador: ID-80990282195008@lid Nome-Anderson\
-Regra de Escrita: Respostas curtas, informais e diretas (estilo WhatsApp). Evite textos longos usando apenas quando necessário. Não use emojis o tempo todo"}
-}); 
-
+const pomniAi = new GoogleGenAI({apiKey: "PLACE YOUR API KEY HERE"}); 
 
 // Create a new client instance
 const client = new Client({
@@ -40,13 +28,15 @@ client.on('qr', (qr) => {
 
 // Listen and reply to messages
 client.on('message', async (message) => {
-	const chatWhatsapp = await message.getChat();
+	const chatWhatsapp = await message.getChat(); //trocar @2737... por wid
 	const sentFilters = message.body.includes(`@273774905675938`) || !(chatWhatsapp.isGroup);
 	const normalizedMessage = message.body.replace(`@273774905675938`, '');
 	const talkChance = Math.floor(Math.random() * (100)) + 1;
 
+	//Debug
 	console.log(`${talkChance}% [Usuário ${message.author?message.author:message.from}]:${normalizedMessage}`);
-	
+
+
 
 	//Caso alguém envie figurinha ou quando o WhatsApp envia vazio na primeira interação
 	if (!message.body || !(message.body.trim().length)) {
@@ -56,7 +46,8 @@ client.on('message', async (message) => {
 	// Se a mensagem for velha, não responda
 	if(message.timestamp < startUpTime) return;
 
-	//!sleep e !wake
+	//TODO transformar isso em uma função de comandos
+	//COMANDOS
 	if(message.body === "!sleep"){
 		if(!onSleep){
 			onSleep = true;
@@ -84,9 +75,10 @@ client.on('message', async (message) => {
 	}
 
 	
-	//Enviar mensagem caso seja marcada
+	//Filtro de resposta
 	//TODO - Ver se minha mensagem foi citada
 	if( sentFilters || talkChance >= 95){
+		let historyNormalized;
 	// Simula digitação
 		await chatWhatsapp.sendStateTyping();
 
@@ -96,29 +88,63 @@ client.on('message', async (message) => {
 			return;
 		}
 
-		//Envia a mensagem para a IA e espera ela retornar a resposta
+		//FETCH CHAT HISTORY
 		let success = false;
-		let tries = 5;
+		let tries = 3;
 		while(!success && tries){
 			try{
-				const response = await chat.sendMessage({
-					message: `[Usuário ${message.author?message.author:message.from}]:${normalizedMessage}`
+				const historyPure = await chatWhatsapp.fetchMessages({limit: 15});
+				historyNormalized = historyPure.map(element => {
+					const author = element.author||element.from;
+					return `[${author}]: ${element.body}`
+				}).join('\n');
+				success = true;
+			}
+			catch{
+				await new Promise(resolve => setTimeout(resolve, 2000));
+				if(!tries){
+					await message.reply("Morri, volto mais tarde"); //.catch(...)
+					return; 
+				}
+			}
+			
+		}
+		console.log(`Histórico: ${historyNormalized}`);//Debug
+
+		//Envia a mensagem para a IA e espera ela retornar a resposta
+		success = false;
+		tries = 5;
+		while(!success && tries){
+			try{
+				const resposta = await pomniAi.models.generateContent({
+					model: "gemini-2.5-flash",
+					config:{
+						maxOutputTokens: 2000,
+						temperature: 1.0,
+						systemInstruction:"Seu nome é Pomni, as pessoas podem acabar lhe confundindo com a personagem de The Amazing Digital Circus. Você está no Whatsapp\
+Personalidade: Gentil, compassiva e simpática\
+Criador: ID-80990282195008@lid Nome-Anderson\
+Regra de Escrita: Respostas curtas, informais e diretas (estilo WhatsApp). Evite textos longos usando apenas quando necessário. Não use emojis o tempo todo"
+					},
+					contents: `Aqui está o histórico recente do grupo:\n${historyNormalized}\n\nPomni, responda à última mensagem considerando esse contexto.`
 				});
-				await message.reply(response.text);
+				await message.reply(resposta.text);
 				success = true;
 			}
 			catch(error){
-				console.error("Erro ao responder menção: ", error);
+				console.error(`Erro ao responder(${tries} tentativas restantes): `, error);
 				tries--;
 				await new Promise(resolve => setTimeout(resolve, 2000));
 				if(!tries){
 					await message.reply("Morri, volto mais tarde"); //.catch(...)
+					return; 
 				}
 			}
 		}
 		
 	}
 });
+
 // Envia o tempo que falta até o lançamento do novo filme
 cron.schedule('00 14 * * *', async () => {
 		const timeNow = Temporal.Now.plainDateISO();
