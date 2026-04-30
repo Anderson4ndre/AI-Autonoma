@@ -57,7 +57,6 @@ Regra de Escrita: Respostas curtas, informais e diretas (estilo WhatsApp). Evite
             await new Promise(resolve => setTimeout(resolve, ERROR_WAIT));
             if(!tries){
                 await messageObject.reply("Alguma coisa deu errada"); //.catch(...)
-                return; 
             }
         }
 
