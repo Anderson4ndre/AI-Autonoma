@@ -1,7 +1,7 @@
 const HISTORY_SIZE = 15;
 const ERROR_WAIT = 3500;
 
-export async function whatsHistoryFetch(chatObject){
+export async function whatsHistoryFetch(chatObject, myUserId){
     let tries = 3;
     let historyNormalized
     while(tries){
@@ -14,7 +14,7 @@ export async function whatsHistoryFetch(chatObject){
                 if(author == "273774905675938@lid"){
                     author = "Pomni(Você)"
                 }
-                return `[${author}]: ${element.body.replace(`@273774905675938`, '').trim()}`
+                return `[${author}]: ${element.body.replace(myUserId, '').trim()}`
             }).join('\n');
             tries = 0;
         }

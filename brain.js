@@ -7,6 +7,8 @@ import { Temporal } from '@js-temporal/polyfill';//const { Temporal } = require(
 import { aimessageSend, whatsHistoryFetch } from './whatsGemini.mjs';
 
 const startUpTime = Math.floor(Date.now() / 1000);
+const CHAT_ID = "120363166360682726@g.us";
+const MY_MENTION_ID = "@273774905675938";
 let onSleep = false;
 
 // Creates an AI
@@ -33,7 +35,7 @@ client.on('qr', (qr) => {
 // Listen and reply to messages
 client.on('message', async (message) => {
 	const chatWhatsapp = await message.getChat(); //trocar @2737... por wid
-	const sentFilters = message.body.includes(`@273774905675938`) || !(chatWhatsapp.isGroup);
+	const sentFilters = message.body.includes(MY_MENTION_ID) || !(chatWhatsapp.isGroup);
 	const talkChance = Math.floor(Math.random() * (100)) + 1;
 
 
@@ -86,7 +88,7 @@ client.on('message', async (message) => {
 		}
 
 		//FETCH CHAT HISTORY
-		let historyNormalized = await whatsHistoryFetch(chatWhatsapp);
+		let historyNormalized = await whatsHistoryFetch(chatWhatsapp, MY_MENTION_ID);
 
 		//Envia a mensagem para a IA e espera ela retornar a resposta
 		await aimessageSend(historyNormalized, pomniAi, message);
@@ -97,10 +99,9 @@ client.on('message', async (message) => {
 //Chance de falar no grupo a cada minuto
 cron.schedule("* * * * *", async () => {
 	if(!client.pupPage || onSleep) return;
-	const chatID = "120363166360682726@g.us";
 	const talkChance = Math.floor(Math.random() * 100) + 1;
 	const instant = Temporal.Now.instant(); //Pega o tempo atual em forma de Temporal
-	const grupoID = await client.getChatById(chatID).catch(error => { 
+	const grupoID = await client.getChatById(CHAT_ID).catch(error => { 
 		console.error(`Erro(${tries} tentativas restantes)`, error);
 	})
 	const lastMessage = grupoID.lastMessage;
@@ -116,7 +117,7 @@ cron.schedule("* * * * *", async () => {
 
 	if(lastMessageNowDiffM < 10 || talkChance < 95) return;
 		//FETCH CHAT HISTORY
-		let historyNormalized = await whatsHistoryFetch(grupoID);
+		let historyNormalized = await whatsHistoryFetch(grupoID, MY_MENTION_ID);
 
 		//Envia a mensagem para a IA e espera ela retornar a resposta
 		await aimessageSend(historyNormalized, pomniAi, lastMessage);
@@ -130,7 +131,7 @@ cron.schedule('00 14 * * *', async () => {
 		const timeNow = Temporal.Now.plainDateISO();
 		const eventTime = new Temporal.PlainDate(2026, 6, 4);
 		const timeUntilEvent = timeNow.until(eventTime);
-		const grupoID = await client.getChatById("120363166360682726@g.us");
+		const grupoID = await client.getChatById(CHAT_ID);
 		await grupoID.sendMessage(`*Faltam ${timeUntilEvent.days} dias para lançar o último ep!!!*`);
 	},
 	{
