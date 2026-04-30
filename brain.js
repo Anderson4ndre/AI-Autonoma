@@ -4,6 +4,7 @@ import * as qrcode from 'qrcode-terminal'//const qrcode = require('qrcode-termin
 import { GoogleGenAI } from '@google/genai';//const { GoogleGenAI }  = require("@google/genai");
 import * as cron from 'node-cron';//const cron = require('node-cron');
 import { Temporal } from '@js-temporal/polyfill';//const { Temporal } = require('@js-temporal/polyfill');
+import { aimessageSend, whatsHistoryFetch } from './whatsGemini.mjs';
 
 const startUpTime = Math.floor(Date.now() / 1000);
 let onSleep = false;
@@ -76,10 +77,6 @@ client.on('message', async (message) => {
 	//Filtro de resposta
 	//TODO - Ver se minha mensagem foi citada
 	if( sentFilters || talkChance >= 95){
-		let historyNormalized;
-	// Simula digitação
-		await chatWhatsapp.sendStateTyping();
-
 		//Caso esteja dormindo, parar função
 		if(onSleep){
 			if(sentFilters){
@@ -89,58 +86,10 @@ client.on('message', async (message) => {
 		}
 
 		//FETCH CHAT HISTORY
-		let tries = 3;
-		while(tries){
-			try{
-				const historyPure = await chatWhatsapp.fetchMessages({limit: 15});
-				historyNormalized = historyPure.map(element => {
-					let author = element.author||element.from;
-					if(author == "273774905675938@lid"){
-						author = "Pomni(Você)"
-					}
-					return `[${author}]: ${element.body.replace(`@273774905675938`, '').trim()}`;
-				}).join('\n');
-				tries = 0;
-			}
-			catch{
-				await new Promise(resolve => setTimeout(resolve, 2000));
-				if(!tries){
-					await message.reply("Morri, volto mais tarde"); //.catch(...)
-					return; 
-				}
-			}
-			
-		}
-		console.log(`Histórico: ${historyNormalized}`);//Debug
+		let historyNormalized = await whatsHistoryFetch(chatWhatsapp);
 
 		//Envia a mensagem para a IA e espera ela retornar a resposta
-		tries = 5;
-		while(tries){
-			try{
-				const resposta = await pomniAi.models.generateContent({
-					model: "gemini-2.5-flash",
-					config:{
-						temperature: 1.0,
-						systemInstruction:"Seu nome é Pomni, semelhante a personagem de The Amazing Digital Circus. Você está no Whatsapp\
-Personalidade: Gentil, compassiva e simpática\
-Criador: O nome do seu criador é Anderson e o ID dele na conversa é 80990282195008@lid\
-Regra de Escrita: Respostas curtas, informais e diretas (estilo WhatsApp). Evite textos longos usando apenas quando necessário. Não use emojis o tempo todo"
-					},
-					contents: `Aqui está o histórico recente do grupo:\n${historyNormalized}\n\nPomni, responda à última mensagem considerando esse contexto.`
-				});
-				await message.reply(resposta.text);
-				tries = 0;
-			}
-			catch(error){
-				console.error(`Erro ao responder(${tries} tentativas restantes): `, error);
-				tries--;
-				await new Promise(resolve => setTimeout(resolve, 2000));
-				if(!tries){
-					await message.reply("Morri, volto mais tarde"); //.catch(...)
-					return; 
-				}
-			}
-		}
+		await aimessageSend(historyNormalized, pomniAi, message);
 		
 	}
 });
@@ -155,7 +104,6 @@ cron.schedule("* * * * *", async () => {
 		console.error(`Erro(${tries} tentativas restantes)`, error);
 	})
 	const lastMessage = grupoID.lastMessage;
-	const message = lastMessage;
 	const lastMessageTime = lastMessage.timestamp;
 	const lastMessageTimeTemporal = Temporal.Instant.fromEpochMilliseconds(lastMessageTime*1000);
 	const lastMessageNowDiffM = ((instant.epochMilliseconds) - lastMessageTimeTemporal.epochMilliseconds)/60000;
@@ -166,62 +114,13 @@ cron.schedule("* * * * *", async () => {
 
 	
 
-	if(lastMessageNowDiffM > 10 && talkChance > 95){
-		let historyNormalized;
+	if(lastMessageNowDiffM < 10 || talkChance < 95) return;
 		//FETCH CHAT HISTORY
-		let tries = 3;
-		while(tries){
-			try{
-				// Simula digitação
-				await grupoID.sendStateTyping();
-				const historyPure = await grupoID.fetchMessages({limit: 15});
-				historyNormalized = historyPure.map(element => {
-					let author = element.author||element.from;
-					if(author == "273774905675938@lid"){
-						author = "Pomni(Você)"
-					}
-					return `[${author}]: ${element.body.replace(`@273774905675938`, '').trim()}`
-				}).join('\n');
-				tries = 0;
-			}
-			catch(error){
-				console.error("Erro no fetch messages: ", error);
-				await new Promise(resolve => setTimeout(resolve, 3500));
-				tries--;
-			}
-		}
-		//console.log(`Histórico: ${historyNormalized}`);//Debug
+		let historyNormalized = await whatsHistoryFetch(grupoID);
 
 		//Envia a mensagem para a IA e espera ela retornar a resposta
-		tries = 5;
-		while(tries){
-			try{
-				const resposta = await pomniAi.models.generateContent({
-					model: "gemini-2.5-flash",
-					config:{
-						temperature: 1.0,
-						systemInstruction:"Seu nome é Pomni, semelhante a personagem de The Amazing Digital Circus. Você está no Whatsapp\
-Personalidade: Gentil, compassiva e simpática\
-Criador: O nome do seu criador é Anderson e o ID dele na conversa é 80990282195008@lid\
-Regra de Escrita: Respostas curtas, informais e diretas (estilo WhatsApp). Evite textos longos usando apenas quando necessário. Não use emojis o tempo todo"
-					},
-					contents: `Aqui está o histórico recente do grupo:\n${historyNormalized}\n\nPomni, responda à última mensagem considerando esse contexto.`
-				});
-				await message.reply(resposta.text);
-				tries = 0;
-			}
-			catch(error){
-				console.error(`Erro ao responder(${tries} tentativas restantes): `, error);
-				tries--;
-				await new Promise(resolve => setTimeout(resolve, 2000));
-				if(!tries){
-					await message.reply("Morri, volto mais tarde"); //.catch(...)
-					return; 
-				}
-			}
-
-		}
-	}
+		await aimessageSend(historyNormalized, pomniAi, lastMessage);
+	
 })
 
 
