@@ -1,14 +1,15 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
-const { GoogleGenAI }  = require("@google/genai");
-const cron = require('node-cron');
-const { Temporal } = require('@js-temporal/polyfill');
+import pkg from 'whatsapp-web.js'; //const { Client, LocalAuth } = require('whatsapp-web.js');
+const { Client, LocalAuth } = pkg;
+import * as qrcode from 'qrcode-terminal'//const qrcode = require('qrcode-terminal');
+import { GoogleGenAI } from '@google/genai';//const { GoogleGenAI }  = require("@google/genai");
+import * as cron from 'node-cron';//const cron = require('node-cron');
+import { Temporal } from '@js-temporal/polyfill';//const { Temporal } = require('@js-temporal/polyfill');
 
 const startUpTime = Math.floor(Date.now() / 1000);
 let onSleep = false;
 
 // Creates an AI
-const pomniAi = new GoogleGenAI({apiKey: "PLACE YOUR API KEY HERE"}); 
+const pomniAi = new GoogleGenAI({apiKey: "PASTE YOUR API KEY HERE"});
 
 // Create a new client instance
 const client = new Client({
@@ -165,7 +166,7 @@ cron.schedule("* * * * *", async () => {
 
 	
 
-	if(lastMessageNowDiffM > 10 && talkChance > 98){
+	if(lastMessageNowDiffM > 10 && talkChance > 95){
 		let historyNormalized;
 		//FETCH CHAT HISTORY
 		let tries = 3;

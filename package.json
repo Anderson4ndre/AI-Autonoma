@@ -4,7 +4,7 @@
   "description": "Pomni AI for Whatsapp group",
   "license": "ISC",
   "author": "Verksento",
-  "type": "commonjs",
+  "type": "module",
   "main": "brain.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
