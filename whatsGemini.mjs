@@ -1,4 +1,6 @@
-const HISTORY_SIZE = 15;
+import fs from 'fs/promises';
+import 'dotenv/config';
+const HISTORY_SIZE = 25;
 const ERROR_WAIT = 3500;
 
 export async function whatsHistoryFetch(chatObject, myUserId){
@@ -41,10 +43,7 @@ export async function aimessageSend(historyNormalized, aiAPI, messageObject){
                 model: "gemini-2.5-flash",
                 config:{
                     temperature: 1.0,
-                    systemInstruction:"Seu nome é Pomni, semelhante a personagem de The Amazing Digital Circus. Você está no Whatsapp\
-Personalidade: Gentil, compassiva e simpática\
-Criador: O nome do seu criador é Anderson e o ID dele na conversa é 80990282195008@lid\
-Regra de Escrita: Respostas curtas, informais e diretas (estilo WhatsApp). Evite textos longos usando apenas quando necessário. Não use emojis o tempo todo"
+                    systemInstruction: await fs.readFile(process.env.PROMPT_PATH, "utf-8")
                 },
                 contents: `Aqui está o histórico recente do grupo:\n${historyNormalized}\n\nPomni, responda à última mensagem considerando esse contexto.`
             });
