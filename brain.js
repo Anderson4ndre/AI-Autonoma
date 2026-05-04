@@ -2,6 +2,7 @@ import pkg from 'whatsapp-web.js'; //const { Client, LocalAuth } = require('what
 const { Client, LocalAuth } = pkg;
 import * as qrcode from 'qrcode-terminal'//const qrcode = require('qrcode-terminal');
 import { GoogleGenAI } from '@google/genai';//const { GoogleGenAI }  = require("@google/genai");
+import 'dotenv/config';
 import * as cron from 'node-cron';//const cron = require('node-cron');
 import { Temporal } from '@js-temporal/polyfill';//const { Temporal } = require('@js-temporal/polyfill');
 import { aimessageSend, whatsHistoryFetch } from './whatsGemini.mjs';
@@ -12,7 +13,7 @@ const MY_MENTION_ID = "@273774905675938";
 let onSleep = false;
 
 // Creates an AI
-const pomniAi = new GoogleGenAI({apiKey: "PASTE YOUR API KEY HERE"});
+const pomniAi = new GoogleGenAI({apiKey: process.env.API_KEY});
 
 // Create a new client instance
 const client = new Client({
