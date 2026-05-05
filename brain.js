@@ -87,7 +87,7 @@ client.on('message', async (message) => {
 		}
 
 		//FETCH CHAT HISTORY
-		let historyNormalized = await whatsHistoryFetch(chatWhatsapp, process.env.MY_MENTION_ID);
+		let historyNormalized = await whatsHistoryFetch(chatWhatsapp);
 
 		//Envia a mensagem para a IA e espera ela retornar a resposta
 		await aimessageSend(historyNormalized, pomniAi, message);
@@ -116,7 +116,7 @@ cron.schedule("* * * * *", async () => {
 
 	if(lastMessageNowDiffM < 10 || talkChance < 95) return;
 		//FETCH CHAT HISTORY
-		let historyNormalized = await whatsHistoryFetch(grupoID, process.env.MY_MENTION_ID);
+		let historyNormalized = await whatsHistoryFetch(grupoID);
 
 		//Envia a mensagem para a IA e espera ela retornar a resposta
 		await aimessageSend(historyNormalized, pomniAi, lastMessage);
