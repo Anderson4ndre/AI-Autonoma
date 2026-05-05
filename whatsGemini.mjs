@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import 'dotenv/config';
+import { promises } from 'dns';
 const HISTORY_SIZE = 25;
 const ERROR_WAIT = 3500;
 
@@ -11,13 +12,30 @@ export async function whatsHistoryFetch(chatObject, myUserId){
             // Simula digitação
             await chatObject.sendStateTyping();
             const historyPure = await chatObject.fetchMessages({limit: HISTORY_SIZE});
-            historyNormalized = historyPure.map(element => {
+            let historyPromises = historyPure.map(async element => {
                 let author = element.author||element.from;
+                let context = '';
                 if(author == "273774905675938@lid"){
                     author = "Pomni(Você)"
                 }
-                return `[${author}]: ${element.body.replace(myUserId, '').trim()}`
-            }).join('\n');
+                if(element.hasQuotedMsg){
+                    try{
+                        const quotedMsg = await element.getQuotedMessage();
+                        let quotedUser = quotedMsg.author || quotedMsg.from;
+                        if(quotedMsg == "273774905675938@lid"){
+                            quotedUser = "Pomni(Você)"
+                        }
+                        context = `(Em resposta a ${quotedUser}: ${quotedMsg.body})`;
+                    }
+                    catch(err){
+                        context = `(Citação indisponível)`;
+                    }
+                }
+                const body = element.body.replace(myUserId, '').trim();
+                return `[${author} ${context}]: ${body}`
+            });
+            const finalResult = await Promise.all(historyPromises);
+            historyNormalized = finalResult.join('\n');
             tries = 0;
         }
         catch(error){
