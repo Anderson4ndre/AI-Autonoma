@@ -36,7 +36,15 @@ client.on('message', async (message) => {
 	const chatWhatsapp = await message.getChat();
 	const sentFilters = message.body.includes(process.env.MY_MENTION_ID) || !(chatWhatsapp.isGroup);
 	const talkChance = Math.floor(Math.random() * (100)) + 1;
+	const isMsgQuoting = message.hasQuotedMsg;
+	let quotedMsg;
 
+	if(isMsgQuoting){
+		quotedMsg = message.getQuotedMessage();
+	}
+	else{
+		quotedMsg = null;
+	}
 
 	//Caso alguém envie figurinha ou quando o WhatsApp envia vazio na primeira interação
 	if (!message.body || !(message.body.trim().length)) {
@@ -73,11 +81,10 @@ client.on('message', async (message) => {
 		}
 		return;
 	}
-
-	
+	console.log((await quotedMsg).fromMe) // Debug
 	//Filtro de resposta
 	//TODO - Ver se minha mensagem foi citada
-	if( sentFilters || talkChance >= 95){
+	if( sentFilters || talkChance >= 95 || (await quotedMsg)?.fromMe){
 		//Caso esteja dormindo, parar função
 		if(onSleep){
 			if(sentFilters){
@@ -101,7 +108,7 @@ cron.schedule("* * * * *", async () => {
 	const talkChance = Math.floor(Math.random() * 100) + 1;
 	const instant = Temporal.Now.instant(); //Pega o tempo atual em forma de Temporal
 	const grupoID = await client.getChatById(process.env.CHAT_ID).catch(error => { 
-		console.error(`Erro(${tries} tentativas restantes)`, error);
+		console.error(`Erro dentro do cron: `, error);
 	})
 	const lastMessage = grupoID.lastMessage;
 	const lastMessageTime = lastMessage.timestamp;
@@ -113,8 +120,8 @@ cron.schedule("* * * * *", async () => {
 	console.log(`Chance de falar: ${talkChance}`);
 
 	
-
-	if(lastMessageNowDiffM < 10 || talkChance < 95) return;
+	//Se a mensagem for muito nova ou ser minha, encerra função
+	if((lastMessageNowDiffM < 10 || talkChance < 95) || lastMessage.fromMe) return;
 		//FETCH CHAT HISTORY
 		let historyNormalized = await whatsHistoryFetch(grupoID);
 
