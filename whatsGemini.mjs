@@ -22,7 +22,7 @@ export async function whatsHistoryFetch(chatObject){
                 let author = element.author||element.from;
                 let context = '';
                 if(author == process.env.AI_ID){
-                    author = "Pomni(Você)" //Criar AI_NICKNAME //Será que uma das duas palavras são redundantes?
+                    author = "Você" //Criar AI_NICKNAME //Será que uma das duas palavras são redundantes?
                 }
                 if(element.hasQuotedMsg){
                     try{
