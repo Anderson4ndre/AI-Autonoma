@@ -4,7 +4,7 @@ import { promises } from 'dns';
 const HISTORY_SIZE = 25;
 const ERROR_WAIT = 3500;
 
-export async function whatsHistoryFetch(chatObject, myUserId){
+export async function whatsHistoryFetch(chatObject){
     let tries = 3;
     let historyNormalized
     while(tries){
@@ -15,14 +15,14 @@ export async function whatsHistoryFetch(chatObject, myUserId){
             let historyPromises = historyPure.map(async element => {
                 let author = element.author||element.from;
                 let context = '';
-                if(author == "273774905675938@lid"){
+                if(author == process.env.AI_ID){
                     author = "Pomni(Você)"
                 }
                 if(element.hasQuotedMsg){
                     try{
                         const quotedMsg = await element.getQuotedMessage();
                         let quotedUser = quotedMsg.author || quotedMsg.from;
-                        if(quotedUser == "273774905675938@lid"){
+                        if(quotedUser == process.env.AI_ID){
                             quotedUser = "Pomni(Você)"
                         }
                         context = `(Em resposta a [${quotedUser}: ${quotedMsg.body}])`; //Precisa vazer recursivamente para pegar citações de citações
@@ -31,7 +31,7 @@ export async function whatsHistoryFetch(chatObject, myUserId){
                         context = `(Citação indisponível)`;
                     }
                 }
-                const body = element.body.replace(myUserId, '').trim();
+                const body = element.body.replace(process.env.MY_MENTION_ID, '').trim();
                 return `[${author} ${context}]: ${body}`
             });
             const finalResult = await Promise.all(historyPromises);
