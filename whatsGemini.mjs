@@ -27,7 +27,7 @@ export async function whatsHistoryFetch(chatObject){
                 if(element.hasQuotedMsg){
                     try{
                         const quotedMsg = await element.getQuotedMessage().catch(err => console.error("Erro em getQuotedMessage: ", err));
-                        const foundIndex = historyPure.findIndex(m => m.id._serialized === quotedMsg.id._serialized);
+                        const foundIndex = historyPure.findIndex(m => m.id._serialized === quotedMsg.id._serialized); //.id.id seria melhor?
                         if(foundIndex !== -1){
                             context = `(#${foundIndex})`;
                         }
