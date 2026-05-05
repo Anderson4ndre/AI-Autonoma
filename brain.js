@@ -5,7 +5,7 @@ import { GoogleGenAI } from '@google/genai';
 import 'dotenv/config';
 import * as cron from 'node-cron';
 import { Temporal } from '@js-temporal/polyfill';
-import { aimessageSend, whatsHistoryFetch } from './whatsGemini.mjs';
+import { aimessageSend, rememberWrite, whatsHistoryFetch } from './whatsGemini.mjs';
 
 const startUpTime = Math.floor(Date.now() / 1000);
 let onSleep = false;
@@ -39,12 +39,6 @@ client.on('message', async (message) => {
 	const isMsgQuoting = message.hasQuotedMsg;
 	let quotedMsg;
 
-	if(isMsgQuoting){
-		quotedMsg = message.getQuotedMessage();
-	}
-	else{
-		quotedMsg = null;
-	}
 
 	//Caso alguém envie figurinha ou quando o WhatsApp envia vazio na primeira interação
 	if (!message.body || !(message.body.trim().length)) {
@@ -56,31 +50,46 @@ client.on('message', async (message) => {
 
 	//TODO transformar isso em uma função de comandos
 	//COMANDOS
-	if(message.body === "!sleep"){
-		if(!onSleep){
-			onSleep = true;
-			console.log("onSleep set as true");
-			chatWhatsapp.sendMessage("*Dormindo...*");
+	if(message.body.startsWith('!')){ //&& fromOwner
+		switch(message.body){
+			case "!sleep":
+				if(!onSleep){
+					onSleep = true;
+					console.log("onSleep set as true");
+					chatWhatsapp.sendMessage("*Dormindo...*");
 
-		}
-		else{
-			chatWhatsapp.sendMessage("Já estou dormindo!");
+				}
+				else{
+					chatWhatsapp.sendMessage("Já estou dormindo!");
+				}
+				break;
+			case "!wake":
+				if(!onSleep){
+					chatWhatsapp.sendMessage("Já estou acordada!");
+			
+				}
+				else{
+					onSleep = false;
+					console.log("onSleep set as false");
+					chatWhatsapp.sendMessage("*Acordando...*");
+				}
+				break;
+			case "!remember":
+				let messageToRemember = message.body.replace("!remember ", '');
+				rememberWrite(process.env.MEMORY_FILE, messageToRemember);
+				break;
+
 		}
 		return;
 	}
 
-	if(message.body === "!wake"){
-		if(!onSleep){
-			chatWhatsapp.sendMessage("Já estou acordada!");
-	
-		}
-		else{
-			onSleep = false;
-			console.log("onSleep set as false");
-			chatWhatsapp.sendMessage("*Acordando...*");
-		}
-		return;
+	if(isMsgQuoting){
+		quotedMsg = message.getQuotedMessage();
 	}
+	else{
+		quotedMsg = null;
+	}
+
 	//Filtro de resposta
 	//TODO - Ver se minha mensagem foi citada
 	if( sentFilters || talkChance >= 95 || (await quotedMsg)?.fromMe){
