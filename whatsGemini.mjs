@@ -22,10 +22,10 @@ export async function whatsHistoryFetch(chatObject, myUserId){
                     try{
                         const quotedMsg = await element.getQuotedMessage();
                         let quotedUser = quotedMsg.author || quotedMsg.from;
-                        if(quotedMsg == "273774905675938@lid"){
+                        if(quotedUser == "273774905675938@lid"){
                             quotedUser = "Pomni(Você)"
                         }
-                        context = `(Em resposta a ${quotedUser}: ${quotedMsg.body})`;
+                        context = `(Em resposta a [${quotedUser}: ${quotedMsg.body}])`; //Precisa vazer recursivamente para pegar citações de citações
                     }
                     catch(err){
                         context = `(Citação indisponível)`;
