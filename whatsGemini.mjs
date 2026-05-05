@@ -4,6 +4,12 @@ import { promises } from 'dns';
 const HISTORY_SIZE = 25;
 const ERROR_WAIT = 3500;
 
+async function remember(file_path){
+    let ltMemory = await fs.readFile(file_path, 'utf-8');
+    ltMemory = JSON.parse(ltMemory).fatos.join("\n");
+    return ltMemory;
+}
+
 export async function whatsHistoryFetch(chatObject){
     let tries = 3;
     let historyNormalized
@@ -54,6 +60,7 @@ export async function whatsHistoryFetch(chatObject){
 
 export async function aimessageSend(historyNormalized, aiAPI, messageObject){
     //Envia a mensagem para a IA e espera ela retornar a resposta
+    const memory = await remember(process.env.MEMORY_FILE);
     let tries = 5;
     while(tries){
         try{
@@ -63,7 +70,15 @@ export async function aimessageSend(historyNormalized, aiAPI, messageObject){
                     temperature: 1.0,
                     systemInstruction: await fs.readFile(process.env.PROMPT_PATH, "utf-8")
                 },
-                contents: `Aqui está o histórico recente do grupo:\n${historyNormalized}\n\nPomni, responda à última mensagem considerando esse contexto.`
+                contents: `
+                    CONTEXTO FIXO (MEMÓRIA DE LONGO PRAZO):
+                    ${memory}
+
+                    HISTÓRICO RECENTE:
+                    ${historyNormalized}
+
+                    Pomni, responda considerando tanto a memória fixa quanto o histórico recente.
+                    `
             });
             await messageObject.reply(resposta.text);
             tries = 0;
@@ -79,3 +94,4 @@ export async function aimessageSend(historyNormalized, aiAPI, messageObject){
 
     }
 }
+
