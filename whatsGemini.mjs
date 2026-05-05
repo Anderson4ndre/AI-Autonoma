@@ -18,27 +18,29 @@ export async function whatsHistoryFetch(chatObject){
             // Simula digitação
             await chatObject.sendStateTyping();
             const historyPure = await chatObject.fetchMessages({limit: HISTORY_SIZE});
-            let historyPromises = historyPure.map(async element => {
+            let historyPromises = historyPure.map(async (element, msgIndex) => {
                 let author = element.author||element.from;
                 let context = '';
                 if(author == process.env.AI_ID){
-                    author = "Pomni(Você)"
+                    author = "Pomni(Você)" //Criar AI_NICKNAME //Será que uma das duas palavras são redundantes?
                 }
                 if(element.hasQuotedMsg){
                     try{
-                        const quotedMsg = await element.getQuotedMessage();
-                        let quotedUser = quotedMsg.author || quotedMsg.from;
-                        if(quotedUser == process.env.AI_ID){
-                            quotedUser = "Pomni(Você)"
+                        const quotedMsg = await element.getQuotedMessage().catch(err => console.error("Erro em getQuotedMessage: ", err));
+                        const foundIndex = historyPure.findIndex(m => m.id._serialized === quotedMsg.id._serialized);
+                        if(foundIndex !== -1){
+                            context = `(#${foundIndex})`;
                         }
-                        context = `(Em resposta a [${quotedUser}: ${quotedMsg.body}])`; //Precisa vazer recursivamente para pegar citações de citações
+                        else{
+                            context = `(Citação não encontrada)`;
+                        }
                     }
                     catch(err){
                         context = `(Citação indisponível)`;
                     }
                 }
                 const body = element.body.replace(process.env.MY_MENTION_ID, '').trim();
-                return `[${author} ${context}]: ${body}`
+                return `[#${msgIndex}]${author}${context}: ${body}`
             });
             const finalResult = await Promise.all(historyPromises);
             historyNormalized = finalResult.join('\n');
