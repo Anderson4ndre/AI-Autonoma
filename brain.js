@@ -1,10 +1,10 @@
-import pkg from 'whatsapp-web.js'; //const { Client, LocalAuth } = require('whatsapp-web.js');
+import pkg from 'whatsapp-web.js';
 const { Client, LocalAuth } = pkg;
-import * as qrcode from 'qrcode-terminal'//const qrcode = require('qrcode-terminal');
-import { GoogleGenAI } from '@google/genai';//const { GoogleGenAI }  = require("@google/genai");
+import * as qrcode from 'qrcode-terminal';
+import { GoogleGenAI } from '@google/genai';
 import 'dotenv/config';
-import * as cron from 'node-cron';//const cron = require('node-cron');
-import { Temporal } from '@js-temporal/polyfill';//const { Temporal } = require('@js-temporal/polyfill');
+import * as cron from 'node-cron';
+import { Temporal } from '@js-temporal/polyfill';
 import { aimessageSend, whatsHistoryFetch } from './whatsGemini.mjs';
 
 const startUpTime = Math.floor(Date.now() / 1000);
@@ -33,7 +33,7 @@ client.on('qr', (qr) => {
 
 // Listen and reply to messages
 client.on('message', async (message) => {
-	const chatWhatsapp = await message.getChat(); //trocar @2737... por wid
+	const chatWhatsapp = await message.getChat();
 	const sentFilters = message.body.includes(process.env.MY_MENTION_ID) || !(chatWhatsapp.isGroup);
 	const talkChance = Math.floor(Math.random() * (100)) + 1;
 

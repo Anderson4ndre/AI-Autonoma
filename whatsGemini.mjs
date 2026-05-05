@@ -13,7 +13,7 @@ export async function whatsHistoryFetch(chatObject){
             const historyPure = await chatObject.fetchMessages({limit: HISTORY_SIZE});
             historyNormalized = historyPure.map(element => {
                 let author = element.author||element.from;
-                if(author == "273774905675938@lid"){
+                if(author == process.env.AI_ID){
                     author = "Pomni(Você)"
                 }
                 return `[${author}]: ${element.body.replace(process.env.MY_MENTION_ID, '').trim()}`
