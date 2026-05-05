@@ -81,7 +81,6 @@ client.on('message', async (message) => {
 		}
 		return;
 	}
-	console.log((await quotedMsg).fromMe) // Debug
 	//Filtro de resposta
 	//TODO - Ver se minha mensagem foi citada
 	if( sentFilters || talkChance >= 95 || (await quotedMsg)?.fromMe){
