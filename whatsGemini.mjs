@@ -6,7 +6,7 @@ const ERROR_WAIT = 3500;
 
 async function rememberRead(file_path){ //Lê arquivos com históricos
     let ltMemory = await fs.readFile(file_path, 'utf-8');
-    ltMemory = JSON.parse(ltMemory).conhecidos.join("\n");
+    ltMemory = JSON.parse(ltMemory).conhecidos;
     return ltMemory;
 }
 
@@ -70,7 +70,7 @@ export async function whatsHistoryFetch(chatObject){
     
 }
 
-//Busca todos os IDs no histórico acessível e retorna em forma de array
+//Busca todos os IDs no histórico acessível e retorna em forma de set
 async function searchIds(messageObject){ //ou chatobject direto?
     let chatObject = await messageObject.getChat();
     let historyPure = await chatObject.fetchMessages({limit: HISTORY_SIZE});
@@ -83,12 +83,26 @@ async function searchIds(messageObject){ //ou chatobject direto?
         });
     });
     return ids;
-    console.log(ids); //Debug
+}
+//Recebe um array ou set de ids e busca na memória as strings que os incluem e retorna uma versão otimizada
+async function optimizedMemorySearch(ids, file_path){
+    const memory = await rememberRead(file_path);
+    let optimizedMemory = [];
+    ids.forEach(id =>{ 
+        memory.forEach(entry =>{
+            if(entry.startsWith(id)){
+                optimizedMemory.push(entry);
+            }
+        })
+    });
+    return optimizedMemory;
 }
 
 export async function aimessageSend(historyNormalized, aiAPI, messageObject){ //colocar um callback de fetchhistory e só pedir o objeto chat?
     //Envia a mensagem para a IA e espera ela retornar a resposta
-    const memory = await rememberRead(process.env.MEMORY_FILE);
+    const ids = await searchIds(messageObject);
+    const memory = await optimizedMemorySearch(ids, process.env.MEMORY_FILE);
+    console.log(`Memória: ${memory.join("\n")}`);//Debug
     searchIds(messageObject);//Debug
     let tries = 5;
     while(tries){
@@ -101,7 +115,7 @@ export async function aimessageSend(historyNormalized, aiAPI, messageObject){ //
                 },
                 contents: `
                     CONTEXTO FIXO (MEMÓRIA DE LONGO PRAZO):
-                    ${memory}
+                    ${memory.join("\n")}
 
                     HISTÓRICO RECENTE:
                     ${historyNormalized}
