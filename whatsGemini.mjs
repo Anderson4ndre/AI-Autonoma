@@ -111,11 +111,9 @@ export async function whatsHistoryFetch(chatObject){
         }
         catch(error){
             console.error("Erro no fetch messages: ", error);
+            fs.appendFile("./error.log", error, 'utf8');
             await new Promise(resolve => setTimeout(resolve, ERROR_WAIT));
             tries--;
-            if(!tries){
-                console.log("Alguma coisa deu errada");
-            }
         }
     }
     console.log(`Histórico: ${historyNormalized}`);//Debug
@@ -186,9 +184,10 @@ export async function aimessageModel(aiAPI, prompt) {
         }
         catch(error){
             console.error(`Erro ao responder(${tries} tentativas restantes): `, error);
+            fs.appendFile("./error.log", error, 'utf8');
             tries--;
             await new Promise(resolve => setTimeout(resolve, ERROR_WAIT));
         }
     }
-    return "Alguma coisa deu errada";
+    return ("Alguma coisa deu errada");
 }

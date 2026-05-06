@@ -141,6 +141,7 @@ cron.schedule("* * * * *", async () => {
 	const instant = Temporal.Now.instant(); //Pega o tempo atual em forma de Temporal
 	const grupoID = await client.getChatById(process.env.CHAT_ID).catch(error => { 
 		console.error(`Erro dentro do cron: `, error);
+		fs.appendFile("./error.log", error, 'utf8');
 	})
 	const lastMessage = grupoID.lastMessage;
 	const lastMessageTime = lastMessage.timestamp;
