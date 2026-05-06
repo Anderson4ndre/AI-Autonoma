@@ -30,14 +30,32 @@ async function rememberDelete(file_path, entry){ //Remove elementos da memória 
     fs.writeFile(file_path, ltMemoryString, 'utf8');
 }
 
+export async function rememberWriteInterface(messageObject) {
+    let chatWhatsapp = await messageObject.getChat();
+    let messageToRemember = messageObject.body.replace("!remember", '').trimStart();
+    console.log(messageToRemember);
+    if(!messageToRemember){ //caso não tenha nada depois do remember
+        chatWhatsapp.sendMessage("Lembrar do que?");
+        return;
+    }
+    if(messageToRemember.startsWith("@")){
+        messageToRemember = messageToRemember.replace('@', '');
+        messageToRemember = messageToRemember.replace(' ', '@lid ');
+    }
+    rememberWrite(process.env.MEMORY_FILE, messageToRemember)
+    .then(() =>
+    chatWhatsapp.sendMessage("_Memória adicionada!_")
+    );
+}
+
 export async function rememberDeleteInterface(messageObject){
     let memory = await rememberRead(process.env.MEMORY_FILE);
     let chatWhatsapp = await messageObject.getChat();
     let memoryFormated = [];
-    let entryIndex = 0;
+    let entryIndex = -1;
     memory.forEach(entry => {
+        ++entryIndex;
         memoryFormated.push(`${entryIndex} - ` + entry);
-        entryIndex++;
     });
     if(messageObject.body === '!forget'){
         memoryFormated = memoryFormated.join('\n');
@@ -47,6 +65,7 @@ export async function rememberDeleteInterface(messageObject){
     }
     const entryStr = messageObject.body.replace('!forget ', '');
     const entry = parseInt(entryStr);
+    console.log(`Entry: ${entry} EntryIndex: ${entryIndex}`);
     if(entry > entryIndex || !(Number.isInteger(entry)) || entry < 0){
 		chatWhatsapp.sendMessage("_Índice inválido_");
 		return;
@@ -54,7 +73,6 @@ export async function rememberDeleteInterface(messageObject){
     rememberDelete(process.env.MEMORY_FILE, entry).then(() => {
         chatWhatsapp.sendMessage(`Memória ${entry} apagada com sucesso!`);
     });
-   return;
 }
 
 export async function whatsHistoryFetch(chatObject){

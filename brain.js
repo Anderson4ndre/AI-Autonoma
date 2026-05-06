@@ -5,7 +5,7 @@ import { GoogleGenAI } from '@google/genai';
 import 'dotenv/config';
 import * as cron from 'node-cron';
 import { Temporal } from '@js-temporal/polyfill';
-import { aimessageSend, rememberWrite, whatsHistoryFetch, rememberRead, rememberDeleteInterface } from './whatsGemini.mjs';
+import { aimessageSend, rememberWrite, whatsHistoryFetch, rememberRead, rememberDeleteInterface, rememberWriteInterface } from './whatsGemini.mjs';
 import fs from "fs/promises";
 
 const startUpTime = Math.floor(Date.now() / 1000);
@@ -58,18 +58,12 @@ client.on('message', async (message) => {
 	//TODO transformar isso em uma função de comandos
 	//COMANDOS
 	if(message.body.startsWith('!') && isFromAdmin){
-
 		if(message.body.includes('!remember')){
-			let messageToRemember = message.body.replace("!remember ", '');
-			rememberWrite(process.env.MEMORY_FILE, messageToRemember)
-			.then(() =>
-			chatWhatsapp.sendMessage("_Memória adicionada!_")
-			);
+			rememberWriteInterface(message);
 			return;
 		}
 
 		if(message.body.includes('!forget')){
-			let entryIndex;
 			rememberDeleteInterface(message);
 			return;
 		}

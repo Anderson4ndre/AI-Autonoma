@@ -1,4 +1,4 @@
-!sleep
-!wake
-!remember
-!forget
+!sleep - Coloca em modo sleep
+!wake - Retira do modo sleep
+!remember <str>- Guarda informação na memória
+!forget <n>- Apaga informação da memória
