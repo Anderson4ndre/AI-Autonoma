@@ -94,6 +94,10 @@ client.on('message', async (message) => {
 				let commands = await fs.readFile("./commands.txt", 'utf8');
 				chatWhatsapp.sendMessage(commands);
 				break;
+			case "!fetchHistory":
+				let history = await whatsHistoryFetch(chatWhatsapp);
+				chatWhatsapp.sendMessage(history);
+				break;
 			default:
 				chatWhatsapp.sendMessage("_Comando inválido._");
 		}

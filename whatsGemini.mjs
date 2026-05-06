@@ -78,8 +78,6 @@ export async function whatsHistoryFetch(chatObject){
     let historyNormalized
     while(tries){
         try{
-            // Simula digitação
-            await chatObject.sendStateTyping();
             const historyPure = await chatObject.fetchMessages({limit: process.env.HISTORY_SIZE});
             let historyPromises = historyPure.map(async (element, msgIndex) => {
                 let author = element.author||element.from;
@@ -151,6 +149,8 @@ async function optimizedMemorySearch(ids, file_path){
 
 export async function aimessageSend(historyNormalized, aiAPI, messageObject){ //colocar um callback de fetchhistory
     //Envia a mensagem para a IA e espera ela retornar a resposta
+    const chatObject = await messageObject.getChat();
+    await chatObject.sendStateTyping(); // Simula digitação
     const ids = await searchIds(messageObject);
     const memory = await optimizedMemorySearch(ids, process.env.MEMORY_FILE);
     console.log(`Memória: ${memory.join("\n")}`);//Debug
