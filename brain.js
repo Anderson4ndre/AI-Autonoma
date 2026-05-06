@@ -110,6 +110,22 @@ client.on('message', async (message) => {
 					message.reply("A imagem do perfil de quem?");
 				}
 				break;
+			case "!stickerfy":
+				if(isMsgQuoting){
+					quotedMsg = await message.getQuotedMessage();
+					if(!(quotedMsg.hasMedia)){ 
+						message.reply("Não tem imagem aí.")
+						return;
+					}
+					console.log("Foi 1");
+					const imgMedia = await quotedMsg.downloadMedia();
+					console.log("Foi 2");
+					message.reply(imgMedia, undefined, {sendMediaAsSticker: true});
+				}
+				else{
+					message.reply("Quer que eu transforme o que em figurinha?");
+				}
+				break;
 			default:
 				chatWhatsapp.sendMessage("_Comando inválido._");
 		}
