@@ -4,7 +4,7 @@ import { promises } from 'dns';
 const HISTORY_SIZE = 25;
 const ERROR_WAIT = 3500;
 
-async function rememberRead(file_path){ //Lê arquivos com históricos
+export async function rememberRead(file_path){ //Lê arquivos com históricos e retorna em array
     let ltMemory = await fs.readFile(file_path, 'utf-8');
     ltMemory = JSON.parse(ltMemory).conhecidos;
     return ltMemory;
@@ -18,6 +18,43 @@ export async function rememberWrite(file_path, info) { //Escreve em artigos com 
     Object.defineProperty(ltMemoryObj, "conhecidos", {value: ltMemoryProp});
     let ltMemoryString = JSON.stringify(ltMemoryObj);
     fs.writeFile(file_path, ltMemoryString, 'utf8');
+}
+
+async function rememberDelete(file_path, entry){ //Remove elementos da memória por meio do index
+    let ltMemory = await fs.readFile(file_path, 'utf8');
+    let ltMemoryObj = JSON.parse(ltMemory);
+    let ltMemoryProp = ltMemoryObj.conhecidos;
+    ltMemoryProp.splice(entry, 1);
+    Object.defineProperty(ltMemoryObj, "conhecidos", {value: ltMemoryProp});
+    let ltMemoryString = JSON.stringify(ltMemoryObj);
+    fs.writeFile(file_path, ltMemoryString, 'utf8');
+}
+
+export async function rememberDeleteInterface(messageObject){
+    let memory = await rememberRead(process.env.MEMORY_FILE);
+    let chatWhatsapp = await messageObject.getChat();
+    let memoryFormated = [];
+    let entryIndex = 0;
+    memory.forEach(entry => {
+        memoryFormated.push(`${entryIndex} - ` + entry);
+        entryIndex++;
+    });
+    if(messageObject.body === '!forget'){
+        memoryFormated = memoryFormated.join('\n');
+        chatWhatsapp.sendMessage(memoryFormated);
+        chatWhatsapp.sendMessage("Qual memória deseja excluir?(Escreva o !forget índice)");
+        return;
+    }
+    const entryStr = messageObject.body.replace('!forget ', '');
+    const entry = parseInt(entryStr);
+    if(entry > entryIndex || !(Number.isInteger(entry)) || entry < 0){
+		chatWhatsapp.sendMessage("_Índice inválido_");
+		return;
+	}
+    rememberDelete(process.env.MEMORY_FILE, entry).then(() => {
+        chatWhatsapp.sendMessage(`Memória ${entry} apagada com sucesso!`);
+    });
+   return;
 }
 
 export async function whatsHistoryFetch(chatObject){
