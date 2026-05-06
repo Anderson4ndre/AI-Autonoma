@@ -4,18 +4,18 @@ import { promises } from 'dns';
 const HISTORY_SIZE = 25;
 const ERROR_WAIT = 3500;
 
-async function rememberRead(file_path){
+async function rememberRead(file_path){ //Lê arquivos com históricos
     let ltMemory = await fs.readFile(file_path, 'utf-8');
-    ltMemory = JSON.parse(ltMemory).fatos.join("\n");
+    ltMemory = JSON.parse(ltMemory).conhecidos.join("\n");
     return ltMemory;
 }
 
-export async function rememberWrite(file_path, info) {
+export async function rememberWrite(file_path, info) { //Escreve em artigos com históricos
     let ltMemory = await fs.readFile(file_path, 'utf8');
     let ltMemoryObj = JSON.parse(ltMemory);
-    let ltMemoryProp = ltMemoryObj.fatos;
+    let ltMemoryProp = ltMemoryObj.conhecidos;
     ltMemoryProp.push(info);
-    Object.defineProperty(ltMemoryObj, "fatos", {value: ltMemoryProp});
+    Object.defineProperty(ltMemoryObj, "conhecidos", {value: ltMemoryProp});
     let ltMemoryString = JSON.stringify(ltMemoryObj);
     fs.writeFile(file_path, ltMemoryString, 'utf8');
 }
@@ -32,7 +32,7 @@ export async function whatsHistoryFetch(chatObject){
                 let author = element.author||element.from;
                 let context = '';
                 if(author == process.env.AI_ID){
-                    author = "Você" //Criar AI_NICKNAME //Será que uma das duas palavras são redundantes?
+                    author = "Você" //Criar AI_NICKNAME
                 }
                 if(element.hasQuotedMsg){
                     try{
@@ -70,9 +70,26 @@ export async function whatsHistoryFetch(chatObject){
     
 }
 
-export async function aimessageSend(historyNormalized, aiAPI, messageObject){
+//Busca todos os IDs no histórico acessível e retorna em forma de array
+async function searchIds(messageObject){ //ou chatobject direto?
+    let chatObject = await messageObject.getChat();
+    let historyPure = await chatObject.fetchMessages({limit: HISTORY_SIZE});
+    let ids = new Set();
+    historyPure.forEach(element => {
+        let author = element.author || element.from;
+        ids.add(author);
+        element.mentionedIds.forEach(elementId => {
+            ids.add(elementId?._serialized || elementId);
+        });
+    });
+    return ids;
+    console.log(ids); //Debug
+}
+
+export async function aimessageSend(historyNormalized, aiAPI, messageObject){ //colocar um callback de fetchhistory e só pedir o objeto chat?
     //Envia a mensagem para a IA e espera ela retornar a resposta
     const memory = await rememberRead(process.env.MEMORY_FILE);
+    searchIds(messageObject);//Debug
     let tries = 5;
     while(tries){
         try{
