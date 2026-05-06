@@ -3,3 +3,4 @@
 `!remember <str>`- ```Guarda informação na memória```
 `!forget <n>`- ```Apaga informação da memória```
 `!fetchHistory`- ```Mostra como eu vejo o chat atual```
+`!getProfilePic`- ```Retorna a imagem do perfil da mensagem mencionada```

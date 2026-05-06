@@ -1,5 +1,5 @@
 import pkg from 'whatsapp-web.js';
-const { Client, LocalAuth } = pkg;
+const { Client, LocalAuth, MessageMedia } = pkg;
 import * as qrcode from 'qrcode-terminal';
 import { GoogleGenAI } from '@google/genai';
 import 'dotenv/config';
@@ -97,6 +97,18 @@ client.on('message', async (message) => {
 			case "!fetchHistory":
 				let history = await whatsHistoryFetch(chatWhatsapp);
 				chatWhatsapp.sendMessage(history);
+				break;
+			case "!getProfilePic":
+				if(isMsgQuoting){
+					quotedMsg = await message.getQuotedMessage();
+					const contact = await quotedMsg.getContact();
+					const imgUrl = await contact.getProfilePicUrl();
+					const imgMedia = await MessageMedia.fromUrl(imgUrl);
+					message.reply(imgMedia);
+				}
+				else{
+					message.reply("A imagem do perfil de quem?");
+				}
 				break;
 			default:
 				chatWhatsapp.sendMessage("_Comando inválido._");
