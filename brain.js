@@ -57,6 +57,7 @@ client.on('message', async (message) => {
 
 	//TODO transformar isso em uma função de comandos
 	//COMANDOS
+	//======================================================================================================================
 	if(message.body.startsWith('!')){
 		if(message.body.includes('!remember') && isFromAdmin){
 			rememberWriteInterface(message);
@@ -91,8 +92,15 @@ client.on('message', async (message) => {
 			}
 			return;
 		}
-		if(message.body.includes("!help")){
-			let commands = await fs.readFile("./commands.txt", 'utf8');
+		if(message.body ==="!help"){
+			let commands;
+			if(isFromAdmin){
+				commands = await fs.readFile("./commandsAdmin.txt", 'utf8');
+			}
+			else{
+				commands = await fs.readFile("./commands.txt", 'utf8');
+				
+			}
 			chatWhatsapp.sendMessage(commands);
 			return;
 		}
@@ -132,6 +140,7 @@ client.on('message', async (message) => {
 		chatWhatsapp.sendMessage("_Comando inválido._");
 		return;
 	}
+//====================================================================================================================
 
 	if(isMsgQuoting){
 		quotedMsg = message.getQuotedMessage();
