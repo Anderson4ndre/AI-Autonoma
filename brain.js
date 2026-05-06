@@ -57,78 +57,79 @@ client.on('message', async (message) => {
 
 	//TODO transformar isso em uma função de comandos
 	//COMANDOS
-	if(message.body.startsWith('!') && isFromAdmin){
-		if(message.body.includes('!remember')){
+	if(message.body.startsWith('!')){
+		if(message.body.includes('!remember') && isFromAdmin){
 			rememberWriteInterface(message);
 			return;
 		}
 
-		if(message.body.includes('!forget')){
+		if(message.body.includes('!forget') && isFromAdmin){
 			rememberDeleteInterface(message);
 			return;
 		}
-		switch(message.body){
-			case "!sleep":
-				if(!onSleep){
-					onSleep = true;
-					console.log("onSleep set as true");
-					chatWhatsapp.sendMessage("*Dormindo...*");
+		if(message.body.includes("!sleep") && isFromAdmin){
+			if(!onSleep){
+				onSleep = true;
+				console.log("onSleep set as true");
+				chatWhatsapp.sendMessage("*Dormindo...*");
 
-				}
-				else{
-					chatWhatsapp.sendMessage("Já estou dormindo!");
-				}
-				break;
-			case "!wake":
-				if(!onSleep){
-					chatWhatsapp.sendMessage("Já estou acordada!");
-			
-				}
-				else{
-					onSleep = false;
-					console.log("onSleep set as false");
-					chatWhatsapp.sendMessage("*Acordando...*");
-				}
-				break;
-			case "!help":
-				let commands = await fs.readFile("./commands.txt", 'utf8');
-				chatWhatsapp.sendMessage(commands);
-				break;
-			case "!fetchHistory":
-				let history = await whatsHistoryFetch(chatWhatsapp);
-				chatWhatsapp.sendMessage(history);
-				break;
-			case "!getProfilePic":
-				if(isMsgQuoting){
-					quotedMsg = await message.getQuotedMessage();
-					const contact = await quotedMsg.getContact();
-					const imgUrl = await contact.getProfilePicUrl();
-					const imgMedia = await MessageMedia.fromUrl(imgUrl);
-					message.reply(imgMedia);
-				}
-				else{
-					message.reply("A imagem do perfil de quem?");
-				}
-				break;
-			case "!stickerfy":
-				if(isMsgQuoting){
-					quotedMsg = await message.getQuotedMessage();
-					if(!(quotedMsg.hasMedia)){ 
-						message.reply("Não tem imagem aí.")
-						return;
-					}
-					console.log("Foi 1");
-					const imgMedia = await quotedMsg.downloadMedia();
-					console.log("Foi 2");
-					message.reply(imgMedia, undefined, {sendMediaAsSticker: true});
-				}
-				else{
-					message.reply("Quer que eu transforme o que em figurinha?");
-				}
-				break;
-			default:
-				chatWhatsapp.sendMessage("_Comando inválido._");
+			}
+			else{
+				chatWhatsapp.sendMessage("Já estou dormindo!");
+			}
+			return;
 		}
+		if(message.body.includes("!wake") && isFromAdmin){
+			if(!onSleep){
+				chatWhatsapp.sendMessage("Já estou acordada!");
+		
+			}
+			else{
+				onSleep = false;
+				console.log("onSleep set as false");
+				chatWhatsapp.sendMessage("*Acordando...*");
+			}
+			return;
+		}
+		if(message.body.includes("!help")){
+			let commands = await fs.readFile("./commands.txt", 'utf8');
+			chatWhatsapp.sendMessage(commands);
+			return;
+		}
+		if(message.body.includes("!fetchHistory")){
+			let history = await whatsHistoryFetch(chatWhatsapp);
+			chatWhatsapp.sendMessage(history);
+			return;
+		}
+		if(message.body.includes("!getProfilePic")){
+			if(isMsgQuoting){
+				quotedMsg = await message.getQuotedMessage();
+				const contact = await quotedMsg.getContact();
+				const imgUrl = await contact.getProfilePicUrl();
+				const imgMedia = await MessageMedia.fromUrl(imgUrl);
+				message.reply(imgMedia);
+			}
+			else{
+				message.reply("A imagem do perfil de quem?");
+			}
+			return;
+		}
+		if(message.body.includes("!stickerfy")){
+			if(isMsgQuoting){
+				quotedMsg = await message.getQuotedMessage();
+				if(!(quotedMsg.hasMedia)){ 
+					message.reply("Não tem imagem aí.")
+					return;
+				}
+				const imgMedia = await quotedMsg.downloadMedia();
+				message.reply(imgMedia, undefined, {sendMediaAsSticker: true});
+			}
+			else{
+				message.reply("Quer que eu transforme o que em figurinha?");
+			}
+			return;
+		}
+		chatWhatsapp.sendMessage("_Comando inválido._");
 		return;
 	}
 
