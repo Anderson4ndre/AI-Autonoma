@@ -6,8 +6,10 @@ import 'dotenv/config';
 import * as cron from 'node-cron';
 import { Temporal } from '@js-temporal/polyfill';
 import { aimessageSend, rememberWrite, whatsHistoryFetch } from './whatsGemini.mjs';
+import fs from "fs/promises";
 
 const startUpTime = Math.floor(Date.now() / 1000);
+const admin = process.env.ADMIN_ID;
 let onSleep = false;
 
 // Creates an AI
@@ -37,20 +39,25 @@ client.on('message', async (message) => {
 	const sentFilters = message.body.includes(process.env.MY_MENTION_ID) || !(chatWhatsapp.isGroup);
 	const talkChance = Math.floor(Math.random() * (100)) + 1;
 	const isMsgQuoting = message.hasQuotedMsg;
+	let isFromAdmin = false;
 	let quotedMsg;
 
 
 	//Caso alguém envie figurinha ou quando o WhatsApp envia vazio na primeira interação
-	if (!message.body || !(message.body.trim().length)) {
-    return;
-	}
+	if (!message.body || !(message.body.trim().length)) return;
+
 
 	// Se a mensagem for velha, não responda
 	if(message.timestamp < startUpTime) return;
 
+	// Testa se é do admin
+	if(message.from === admin || message.author === admin){
+		isFromAdmin = true;
+	}
+
 	//TODO transformar isso em uma função de comandos
 	//COMANDOS
-	if(message.body.startsWith('!')){ //&& fromOwner
+	if(message.body.startsWith('!') && isFromAdmin){ //&& fromOwner
 		switch(message.body){
 			case "!sleep":
 				if(!onSleep){
@@ -78,7 +85,12 @@ client.on('message', async (message) => {
 				let messageToRemember = message.body.replace("!remember ", '');
 				rememberWrite(process.env.MEMORY_FILE, messageToRemember);
 				break;
-
+			case "!help":
+				let commands = await fs.readFile("./commands.txt", 'utf8');
+				chatWhatsapp.sendMessage(commands);
+				break;
+			default:
+				chatWhatsapp.sendMessage("_Comando inválido._");
 		}
 		return;
 	}
