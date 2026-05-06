@@ -5,7 +5,7 @@ import { GoogleGenAI } from '@google/genai';
 import 'dotenv/config';
 import * as cron from 'node-cron';
 import { Temporal } from '@js-temporal/polyfill';
-import { aimessageSend, rememberWrite, whatsHistoryFetch, rememberRead, rememberDeleteInterface, rememberWriteInterface } from './whatsGemini.mjs';
+import { aimessageSend, rememberWrite, whatsHistoryFetch, rememberRead, rememberDeleteInterface, rememberWriteInterface, aimessageModel } from './whatsGemini.mjs';
 import fs from "fs/promises";
 
 const startUpTime = Math.floor(Date.now() / 1000);
@@ -125,6 +125,13 @@ client.on('message', async (message) => {
 		aimessageSend(historyNormalized, pomniAi, message);
 		
 	}
+});
+
+client.on("group_join", (notification) => {
+	//Enviar mensagem de boas-vindas
+	const chat = await notification.getChat();
+	const message = await aimessageModel(pomniAi, "Alguém acabou de entrar no grupo, dê as boas vindas!");
+	chat.sendMessage(message);
 });
 
 //Chance de falar no grupo a cada minuto

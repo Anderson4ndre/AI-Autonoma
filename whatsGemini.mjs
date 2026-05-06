@@ -1,7 +1,6 @@
 import fs from 'fs/promises';
 import 'dotenv/config';
 import { promises } from 'dns';
-const HISTORY_SIZE = 25;
 const ERROR_WAIT = 3500;
 
 export async function rememberRead(file_path){ //Lê arquivos com históricos e retorna em array
@@ -81,7 +80,7 @@ export async function whatsHistoryFetch(chatObject){
         try{
             // Simula digitação
             await chatObject.sendStateTyping();
-            const historyPure = await chatObject.fetchMessages({limit: HISTORY_SIZE});
+            const historyPure = await chatObject.fetchMessages({limit: process.env.HISTORY_SIZE});
             let historyPromises = historyPure.map(async (element, msgIndex) => {
                 let author = element.author||element.from;
                 let context = '';
@@ -127,7 +126,7 @@ export async function whatsHistoryFetch(chatObject){
 //Busca todos os IDs no histórico acessível e retorna em forma de set
 async function searchIds(messageObject){ //ou chatobject direto?
     let chatObject = await messageObject.getChat();
-    let historyPure = await chatObject.fetchMessages({limit: HISTORY_SIZE});
+    let historyPure = await chatObject.fetchMessages({limit: process.env.HISTORY_SIZE});
     let ids = new Set();
     historyPure.forEach(element => {
         let author = element.author || element.from;
@@ -152,11 +151,25 @@ async function optimizedMemorySearch(ids, file_path){
     return optimizedMemory;
 }
 
-export async function aimessageSend(historyNormalized, aiAPI, messageObject){ //colocar um callback de fetchhistory e só pedir o objeto chat?
+export async function aimessageSend(historyNormalized, aiAPI, messageObject){ //colocar um callback de fetchhistory
     //Envia a mensagem para a IA e espera ela retornar a resposta
     const ids = await searchIds(messageObject);
     const memory = await optimizedMemorySearch(ids, process.env.MEMORY_FILE);
     console.log(`Memória: ${memory.join("\n")}`);//Debug
+    const prompt = `
+                    CONTEXTO FIXO (MEMÓRIA DE LONGO PRAZO):
+                    ${memory.join("\n")}
+
+                    HISTÓRICO RECENTE:
+                    ${historyNormalized}
+
+                    Pomni, responda considerando tanto a memória fixa quanto o histórico recente.
+                    `;
+    const answer = await aimessageModel(aiAPI, prompt, messageObject);
+    messageObject.reply(answer);
+}
+
+export async function aimessageModel(aiAPI, prompt) {
     let tries = 5;
     while(tries){
         try{
@@ -166,28 +179,16 @@ export async function aimessageSend(historyNormalized, aiAPI, messageObject){ //
                     temperature: 1.0,
                     systemInstruction: await fs.readFile(process.env.PROMPT_PATH, "utf-8")
                 },
-                contents: `
-                    CONTEXTO FIXO (MEMÓRIA DE LONGO PRAZO):
-                    ${memory.join("\n")}
-
-                    HISTÓRICO RECENTE:
-                    ${historyNormalized}
-
-                    Pomni, responda considerando tanto a memória fixa quanto o histórico recente.
-                    `
+                contents: prompt
             });
-            await messageObject.reply(resposta.text);
+            return resposta.text
             tries = 0;
         }
         catch(error){
             console.error(`Erro ao responder(${tries} tentativas restantes): `, error);
             tries--;
             await new Promise(resolve => setTimeout(resolve, ERROR_WAIT));
-            if(!tries){
-                messageObject.reply("Alguma coisa deu errada"); //.catch(...)
-            }
         }
-
     }
+    return "Alguma coisa deu errada";
 }
-
