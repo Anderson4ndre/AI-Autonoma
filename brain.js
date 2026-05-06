@@ -127,7 +127,7 @@ client.on('message', async (message) => {
 	}
 });
 
-client.on("group_join", (notification) => {
+client.on("group_join", async (notification) => {
 	//Enviar mensagem de boas-vindas
 	const chat = await notification.getChat();
 	const message = await aimessageModel(pomniAi, "Alguém acabou de entrar no grupo, dê as boas vindas!");
@@ -141,7 +141,7 @@ cron.schedule("* * * * *", async () => {
 	const instant = Temporal.Now.instant(); //Pega o tempo atual em forma de Temporal
 	const grupoID = await client.getChatById(process.env.CHAT_ID).catch(error => { 
 		console.error(`Erro dentro do cron: `, error);
-		fs.appendFile("./error.log", error, 'utf8');
+		//fs.appendFile("./error.log", error, 'utf8');
 	})
 	const lastMessage = grupoID.lastMessage;
 	const lastMessageTime = lastMessage.timestamp;

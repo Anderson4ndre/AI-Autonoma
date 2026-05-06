@@ -1,0 +1,14 @@
+{
+  "name": "delete_message",
+  "description": "Delete a specified message by its ID",
+  "parameters": {
+    "type": "Type.OBJECT",
+    "properties": {
+      "message_id": {
+        "type": "Type.NUMBER",
+        "description": "Light level from 0 to 100. Zero is off and 100 is full brightness"
+      }
+    },
+    "required": ["message_id"]
+  }
+}
