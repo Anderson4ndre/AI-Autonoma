@@ -110,16 +110,22 @@ client.on('message', async (message) => {
 			return;
 		}
 		if(message.body.includes("!getProfilePic")){
+			let contact;
 			if(isMsgQuoting){
 				quotedMsg = await message.getQuotedMessage();
-				const contact = await quotedMsg.getContact();
-				const imgUrl = await contact.getProfilePicUrl();
-				const imgMedia = await MessageMedia.fromUrl(imgUrl);
-				message.reply(imgMedia);
+				contact = await quotedMsg.getContact();
+			}else if(message.mentionedIds.length === 1){
+				contact = await client.getContactById(message.mentionedIds[0]);
 			}
 			else{
 				message.reply("A imagem do perfil de quem?");
+				return;
 			}
+			const imgUrl = await contact.getProfilePicUrl().catch(err => {return err});
+			const imgMedia = await MessageMedia.fromUrl(imgUrl).catch(err => {
+				return "Erro: Perfil sem imagem";
+			});
+			message.reply(imgMedia);
 			return;
 		}
 		if(message.body.includes("!stickerfy")){

@@ -1,2 +1,2 @@
-`!getProfilePic`- ```Retorna a imagem do perfil da mensagem mencionada```
+`!getProfilePic <@nome>`- ```Retorna a imagem do perfil da mensagem mencionada```
 `!stickerfy`- ```Retorna a imagem da mensagem mencionada como sticker```
