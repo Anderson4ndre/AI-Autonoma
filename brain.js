@@ -122,7 +122,7 @@ client.on('message', async (message) => {
 		let historyNormalized = await whatsHistoryFetch(chatWhatsapp);
 
 		//Envia a mensagem para a IA e espera ela retornar a resposta
-		await aimessageSend(historyNormalized, pomniAi, message);
+		aimessageSend(historyNormalized, pomniAi, message);
 		
 	}
 });
@@ -151,7 +151,7 @@ cron.schedule("* * * * *", async () => {
 		let historyNormalized = await whatsHistoryFetch(grupoID);
 
 		//Envia a mensagem para a IA e espera ela retornar a resposta
-		await aimessageSend(historyNormalized, pomniAi, lastMessage);
+		aimessageSend(historyNormalized, pomniAi, lastMessage);
 	
 })
 
@@ -163,7 +163,8 @@ cron.schedule('00 14 * * *', async () => {
 		const eventTime = new Temporal.PlainDate(2026, 6, 4);
 		const timeUntilEvent = timeNow.until(eventTime);
 		const grupoID = await client.getChatById(process.env.CHAT_ID);
-		await grupoID.sendMessage(`*Faltam ${timeUntilEvent.days} dias para lançar o último ep!!!*`);
+		const messageSent = grupoID.sendMessage(`*Faltam ${timeUntilEvent.days} dias para lançar o último ep!!!*`);
+		messageSent.then(element => {element.pin(86400)});
 	},
 	{
         scheduled: true,

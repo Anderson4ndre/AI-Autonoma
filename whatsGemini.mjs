@@ -33,7 +33,6 @@ async function rememberDelete(file_path, entry){ //Remove elementos da memória 
 export async function rememberWriteInterface(messageObject) {
     let chatWhatsapp = await messageObject.getChat();
     let messageToRemember = messageObject.body.replace("!remember", '').trimStart();
-    console.log(messageToRemember);
     if(!messageToRemember){ //caso não tenha nada depois do remember
         chatWhatsapp.sendMessage("Lembrar do que?");
         return;
@@ -59,7 +58,7 @@ export async function rememberDeleteInterface(messageObject){
     });
     if(messageObject.body === '!forget'){
         memoryFormated = memoryFormated.join('\n');
-        chatWhatsapp.sendMessage(memoryFormated);
+        await chatWhatsapp.sendMessage(memoryFormated);
         chatWhatsapp.sendMessage("Qual memória deseja excluir?(Escreva o !forget índice)");
         return;
     }
@@ -158,7 +157,6 @@ export async function aimessageSend(historyNormalized, aiAPI, messageObject){ //
     const ids = await searchIds(messageObject);
     const memory = await optimizedMemorySearch(ids, process.env.MEMORY_FILE);
     console.log(`Memória: ${memory.join("\n")}`);//Debug
-    searchIds(messageObject);//Debug
     let tries = 5;
     while(tries){
         try{
@@ -186,7 +184,7 @@ export async function aimessageSend(historyNormalized, aiAPI, messageObject){ //
             tries--;
             await new Promise(resolve => setTimeout(resolve, ERROR_WAIT));
             if(!tries){
-                await messageObject.reply("Alguma coisa deu errada"); //.catch(...)
+                messageObject.reply("Alguma coisa deu errada"); //.catch(...)
             }
         }
 
